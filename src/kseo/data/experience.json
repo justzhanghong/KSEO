@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "cards": [
+    {
+      "id": "C01",
+      "title": "Flash v2 async 与 DSpark 方案验收",
+      "status": "FINAL_ACCEPTED_IN_SOURCE_SUMMARY",
+      "applies_to": {
+        "model_family": "deepseek_v4_1",
+        "gpu_arch": "sm80"
+      },
+      "requires_capabilities": [
+        "target_verified_speculation"
+      ],
+      "observations": [
+        "39 条速度请求全部输出 256 tokens，无失败",
+        "GSM8K 1288/1319",
+        "72K C1/C2/C3 满足该任务的 10s/30ms 门槛"
+      ],
+      "transfer_hypothesis": "将被验收的 runtime、完整 diff 和合同作为 recipe 候选；在新模型上重新验证异步调度与投机路径。",
+      "limits": [
+        "不能由此推导所有模型应开启 async 或 DSpark",
+        "摘要中的最终通过不等于本次已重新检查全部 raw"
+      ],
+      "provenance": "由授权历史验收摘要整理；仅保留脱敏结论，未在本工程重新进行 GPU 实测。"
+    },
+    {
+      "id": "C02",
+      "title": "GLM-5.2 IndexShare 与 RDMA 联合优化",
+      "status": "OPTIMIZATION_ACCEPTED_IN_SOURCE_SUMMARY",
+      "applies_to": {
+        "model_family": "glm5_2"
+      },
+      "requires_capabilities": [
+        "index_share",
+        "mtp"
+      ],
+      "observations": [
+        "50K C1 TPOT 99.02866686749107ms -> 31.3467781209186ms",
+        "最终路径为 RDMA、IndexShare、MTP skip-topk，实验 sampled-token P2P 路径已移除",
+        "GSM8K accuracy 0.9643669446550417"
+      ],
+      "transfer_hypothesis": "先核对 indexer_types、共享层和 MTP 语义，再根据通信关键路径选择优化。",
+      "limits": [
+        "联合结果不能分摊为单项 RDMA 或 skip-topk 收益",
+        "不同网络拓扑和新模型需独立校验"
+      ],
+      "provenance": "由授权历史验收摘要整理；仅保留脱敏结论，未在本工程重新进行 GPU 实测。"
+    },
+    {
+      "id": "C03",
+      "title": "同步结束与旋转调度造成 TTFT 回退",
+      "status": "REJECTED_PERFORMANCE",
+      "applies_to": {
+        "model_family": "deepseek_v4_1"
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "72K C3 TPOT 从约 39.37ms 降至 21.39ms",
+        "72K C2 TTFT 从约 5.91s 回退至 36.98s",
+        "性能硬门槛失败，未执行后续精度/API 验收"
+      ],
+      "transfer_hypothesis": "联合约束 TTFT 和 TPOT；将全批次旋转、graph guard 与并发 active request set 关联验证。",
+      "limits": [
+        "该实验不能证明所有同步结束方案都无效"
+      ],
+      "provenance": "由授权历史验收摘要整理；仅保留脱敏结论，未在本工程重新进行 GPU 实测。"
+    },
+    {
+      "id": "C04",
+      "title": "mHC warmup 漏掉 PP0 首层专门化",
+      "status": "REJECTED_PERFORMANCE",
+      "applies_to": {
+        "model_family": "deepseek_v4_1"
+      },
+      "requires_capabilities": [
+        "mhc"
+      ],
+      "observations": [
+        "普通 decoder 层使用 [tokens, hc_mult * hidden_size]，PP0 首层还有 [tokens, hidden_size] 路径",
+        "正式 50K 请求触发 JIT，报告归因为增加约 4s 延迟"
+      ],
+      "transfer_hypothesis": "warmup 用 operator、shape、dtype、布局、PP角色、执行路径和编译选项联合索引，检查真实覆盖。",
+      "limits": [
+        "该卡不包含 exp009 修复后的独立收益证明"
+      ],
+      "provenance": "由授权历史验收摘要整理；仅保留脱敏结论，未在本工程重新进行 GPU 实测。"
+    },
+    {
+      "id": "C05",
+      "title": "max_num_seqs 不一致使测量失效",
+      "status": "INVALID_MEASUREMENT",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "observations": [
+        "retry4 被标记 diagnostic only",
+        "该 run 的 speed、semantic、GSM8K、output、Feature 不能进入正式 seq16 验收"
+      ],
+      "transfer_hypothesis": "服务 runtime 指纹不匹配时，在进入排行榜之前使测量失效。",
+      "limits": [
+        "该记录不能说明 seq1 参数本身性能差"
+      ],
+      "provenance": "由授权历史验收摘要整理；仅保留脱敏结论，未在本工程重新进行 GPU 实测。"
+    },
+    {
+      "id": "C06",
+      "title": "splitKV16 加载失败不能作为 TPOT 结论",
+      "status": "DEPLOYMENT_FAILURE",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "observations": [
+        "模型加载阶段出现 UntypedStorage shape 异常",
+        "另一个 splitkv4 分支产生 TP2/PP8 拓扑污染并被移出锁"
+      ],
+      "transfer_hypothesis": "加载/环境异常与有效性能退化分别归档；物理 GPU 租约和实际拓扑检查先于测量。",
+      "limits": [
+        "不能对 splitKV16 性能打负分或给出不可行结论"
+      ],
+      "provenance": "由授权历史验收摘要整理；仅保留脱敏结论，未在本工程重新进行 GPU 实测。"
+    },
+    {
+      "id": "C07",
+      "title": "P/D 前置长度校验",
+      "status": "FIX_ACCEPTED_IN_SOURCE_REPORT",
+      "applies_to": {},
+      "requires_capabilities": [
+        "pd_disaggregation"
+      ],
+      "observations": [
+        "171274 输入 tokens + 32000 输出预算 = 203274，超过模型长度",
+        "guard-off 出现 IncompleteRead，guard-on 返回 HTTP400 context_length_exceeded",
+        "报告记录修复后观察窗口为 60s"
+      ],
+      "transfer_hypothesis": "P/D admission 在执行 Prefill 前校验实际输入和输出预算，并覆盖取消、超时、错误响应和释放。",
+      "limits": [
+        "60s 无异常不能证明任意负载下长期稳定"
+      ],
+      "provenance": "由授权历史验收摘要整理；仅保留脱敏结论，未在本工程重新进行 GPU 实测。"
+    },
+    {
+      "id": "C08",
+      "title": "候选验收和最终镜像验收分阶段",
+      "status": "CANDIDATE_ACCEPTED_PENDING_FINAL_REVALIDATION_AT_THIS_RECORD",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "observations": [
+        "candidate_exp028_acceptance.json 的 decision 为 PASS",
+        "同一记录要求下一步执行 fresh final-image deployment、完整 speed/API 复验和两轮稳定性",
+        "该任务的 Feature 与输出相似性门禁已按当时用户策略停用"
+      ],
+      "transfer_hypothesis": "每个 decision 必须带 stage 和 contract_version；门禁列表从当前有效合同生成。",
+      "limits": [
+        "不能从候选 PASS 推断此时整个任务完成",
+        "此卡不否认 execution_status 中后续另一个 service run 的 final_acceptance PASS"
+      ],
+      "provenance": "由授权历史验收摘要整理；仅保留脱敏结论，未在本工程重新进行 GPU 实测。"
+    },
+    {
+      "id": "C09",
+      "title": "会话串话初步归因保留为假设",
+      "status": "HYPOTHESIS_NOT_CONFIRMED_BY_THIS_SOURCE",
+      "applies_to": {},
+      "requires_capabilities": [
+        "prefix_cache"
+      ],
+      "observations": [
+        "初步报告怀疑请求状态或 KV 状态隔离问题",
+        "报告说明本地网关日志不能直接证明事故实例"
+      ],
+      "transfer_hypothesis": "将跨请求标记隔离测试加入缓存、MTP、P/D 改动回归；按精确服务实例收集证据。",
+      "limits": [
+        "不能将这份初步分析中的怀疑对象记为已证实根因"
+      ],
+      "provenance": "由授权历史验收摘要整理；仅保留脱敏结论，未在本工程重新进行 GPU 实测。"
+    }
+  ]
+}

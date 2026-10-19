@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "draft": true,
+  "name": "a800_long_context",
+  "mode": "measured",
+  "inputs": {
+    "model": "<model-path>",
+    "model_revision": "<weight-manifest-sha256>",
+    "image": "<image@sha256:digest>",
+    "workload": "<frozen-request-manifest>",
+    "workload_sha256": "<sha256>",
+    "servers": [
+      "<host>"
+    ]
+  },
+  "context": {
+    "model_family": "<family>",
+    "gpu_arch": "sm80",
+    "backend": "vllm",
+    "workload": "long_context",
+    "capabilities": []
+  },
+  "source": {
+    "kind": "git",
+    "path": "<base-source>",
+    "revision": "<full-commit>"
+  },
+  "parameters": {
+    "max_num_batched_tokens": 8192,
+    "max_num_seqs": 16
+  },
+  "steps": [
+    {
+      "name": "preflight",
+      "command": [
+        "{python}",
+        "{config_dir}/adapters/project_adapter.py"
+      ],
+      "timeout_seconds": 120
+    },
+    {
+      "name": "build",
+      "command": [
+        "{python}",
+        "{config_dir}/adapters/project_adapter.py"
+      ],
+      "timeout_seconds": 3600
+    },
+    {
+      "name": "deploy",
+      "command": [
+        "{python}",
+        "{config_dir}/adapters/project_adapter.py"
+      ],
+      "timeout_seconds": 1800
+    },
+    {
+      "name": "smoke",
+      "command": [
+        "{python}",
+        "{config_dir}/adapters/project_adapter.py"
+      ],
+      "timeout_seconds": 300
+    },
+    {
+      "name": "profile",
+      "command": [
+        "{python}",
+        "{config_dir}/adapters/project_adapter.py"
+      ],
+      "timeout_seconds": 900
+    },
+    {
+      "name": "benchmark",
+      "command": [
+        "{python}",
+        "{config_dir}/adapters/project_adapter.py"
+      ],
+      "timeout_seconds": 3600
+    },
+    {
+      "name": "quality",
+      "command": [
+        "{python}",
+        "{config_dir}/adapters/project_adapter.py"
+      ],
+      "timeout_seconds": 7200
+    },
+    {
+      "name": "api",
+      "command": [
+        "{python}",
+        "{config_dir}/adapters/project_adapter.py"
+      ],
+      "timeout_seconds": 1800
+    },
+    {
+      "name": "stability",
+      "command": [
+        "{python}",
+        "{config_dir}/adapters/project_adapter.py"
+      ],
+      "timeout_seconds": 7200
+    }
+  ],
+  "cleanup": {
+    "command": [
+      "{python}",
+      "{config_dir}/adapters/project_adapter.py"
+    ],
+    "timeout_seconds": 180
+  },
+  "validation": {
+    "zero_cache_reads": true,
+    "quality_samples": 1319,
+    "cases": [
+      {
+        "id": "long_c1",
+        "requests": 5,
+        "input_tokens": 49891,
+        "output_tokens": 256
+      }
+    ],
+    "gates": [
+      {
+        "name": "GPU 架构核对",
+        "stage": "preflight",
+        "field": "preflight.runtime.gpu_arch",
+        "op": "==",
+        "value": "sm80"
+      },
+      {
+        "name": "GPU UUID 核对",
+        "stage": "preflight",
+        "field": "preflight.checks.gpu_identity_match",
+        "op": "==",
+        "value": true
+      },
+      {
+        "name": "实际镜像核对",
+        "stage": "preflight",
+        "field": "preflight.checks.image_identity_match",
+        "op": "==",
+        "value": true
+      },
+      {
+        "name": "实际源码核对",
+        "stage": "smoke",
+        "field": "smoke.checks.source_identity_match",
+        "op": "==",
+        "value": true
+      },
+      {
+        "name": "完整请求成功",
+        "stage": "benchmark",
+        "field": "benchmark.failed_requests",
+        "op": "==",
+        "value": 0
+      },
+      {
+        "name": "TTFT 示例门槛",
+        "stage": "benchmark",
+        "field": "benchmark.cases.long_c1.ttft_ms.mean",
+        "op": "<=",
+        "value": 10000
+      },
+      {
+        "name": "TPOT 示例门槛",
+        "stage": "benchmark",
+        "field": "benchmark.cases.long_c1.tpot_ms.mean",
+        "op": "<=",
+        "value": 30
+      },
+      {
+        "name": "GSM8K 示例门槛",
+        "stage": "quality",
+        "field": "quality.accuracy",
+        "op": ">=",
+        "value": 0.95
+      },
+      {
+        "name": "精度请求无失败",
+        "stage": "quality",
+        "field": "quality.failed_requests",
+        "op": "==",
+        "value": 0
+      },
+      {
+        "name": "数值一致性",
+        "stage": "quality",
+        "field": "quality.checks.numerics",
+        "op": "==",
+        "value": true
+      },
+      {
+        "name": "API 与请求隔离",
+        "stage": "api",
+        "field": "api.checks.contract_pass",
+        "op": "==",
+        "value": true
+      },
+      {
+        "name": "稳定性验收",
+        "stage": "stability",
+        "field": "stability.checks.contract_pass",
+        "op": "==",
+        "value": true
+      }
+    ],
+    "objective": {
+      "field": "benchmark.cases.long_c1.ttft_ms.mean",
+      "direction": "min"
+    }
+  },
+  "optimizer": {
+    "kind": "grid",
+    "space": {
+      "max_num_batched_tokens": [
+        4096,
+        8192,
+        16384
+      ]
+    },
+    "min_relative_improvement": 0.005
+  },
+  "budget": {
+    "max_trials": 12,
+    "max_wall_seconds": 86400,
+    "max_gpu_hours": 192
+  },
+  "resources": {
+    "gpu_count": 8,
+    "keys": [
+      "<host>:<GPU-UUID-0>",
+      "<host>:<GPU-UUID-1>",
+      "<host>:<GPU-UUID-2>",
+      "<host>:<GPU-UUID-3>",
+      "<host>:<GPU-UUID-4>",
+      "<host>:<GPU-UUID-5>",
+      "<host>:<GPU-UUID-6>",
+      "<host>:<GPU-UUID-7>"
+    ],
+    "lock_dir": "<shared-lock-directory>"
+  },
+  "final_validation": true,
+  "notes": "此 profile 是需要本地接线的草稿。示例阈值不自动继承为新模型要求；请冻结真实负载、warmup、thinking、retry、模型语义与门禁。"
+}
