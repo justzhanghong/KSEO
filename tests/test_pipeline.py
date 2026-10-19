@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 from pathlib import Path
 
+import kseo
 from kseo.cli import audit
 from kseo.adapter import emit
 from kseo.config import validate
@@ -173,7 +174,8 @@ class PipelineTests(unittest.TestCase):
         config["optimizer"]["kernel"]["extractor"] = {"command": ["{python}", str(script)], "timeout_seconds": 90}
         path = self.root / "task.json"; write_json(path, config)
         directory = self.root / "run"
-        env = os.environ.copy(); env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
+        # 父子控制器使用同一份代码：源码与 wheel 的路径身份不可混用。
+        env = os.environ.copy(); env["PYTHONPATH"] = str(Path(kseo.__file__).resolve().parent.parent)
         process = subprocess.Popen([sys.executable, "-m", "kseo", "run", str(path), "--run-dir", str(directory)],
                                    env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         try:
@@ -184,7 +186,7 @@ class PipelineTests(unittest.TestCase):
                 time.sleep(0.05)
             process.kill(); process.wait(timeout=5)
             resumed = Runner(directory).run()
-            self.assertEqual(resumed["status"], "COMPLETED")
+            self.assertEqual(resumed["status"], "COMPLETED", resumed.get("error"))
             kernels = [a for a in resumed["pipeline"]["attempts"] if a["lane"] == "kernel"]
             self.assertEqual([a["status"] for a in kernels], ["INTERRUPTED", "ACCEPTED"])
             self.assertIsNone(resumed.get("active_workflow"))
