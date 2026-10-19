@@ -22,16 +22,24 @@ def main() -> None:
         payload["checks"] = {"source_readable": True}
     elif stage == "profile":
         payload["checks"] = {"primary_bottleneck": "synthetic_scheduling", "note": "CPU 示例，仅演示反馈协议"}
+        model = runpy.run_path(str(Path(os.environ["KSEO_SOURCE_DIR"]) / "demo_kernel.py"))
+        scheduled = model["SCHEDULER_SCALE"] < 1
+        optimized = model["KERNEL_SCALE"] < 1
+        payload["profile"] = {"scope": "critical_path", "hotspots": [
+            {"id": "launch_wait", "kind": "scheduling", "share": 0.1 if scheduled else 0.6,
+             "achievable_speedup": 1 if scheduled else 1.5, "editable": True},
+            {"id": "demo_kernel", "kind": "kernel", "share": 0.25 if optimized else (0.65 if scheduled else 0.35),
+             "achievable_speedup": 1 if optimized else 1.5, "editable": True}]}
     elif stage == "benchmark":
         kernel = runpy.run_path(str(Path(os.environ["KSEO_SOURCE_DIR"]) / "demo_kernel.py"))
-        scale = kernel["KERNEL_SCALE"]
+        scale = kernel["KERNEL_SCALE"] * kernel["SCHEDULER_SCALE"]
         chunk = parameters["chunk_tokens"]
         ttft, tpot = {512: (120, 24), 1024: (70, 18), 2048: (45, 60)}[chunk]
         rows = []
         for case_id, input_tokens, count, multiplier in [("short_c1", 1024, 3, 1.0), ("long_c2", 8192, 4, 1.5)]:
             for index in range(count):
                 first = ttft * multiplier * scale + index * 0.2
-                per_token = tpot * scale
+                per_token = tpot * kernel["KERNEL_SCALE"]
                 rows.append({"request_id": f"{case_id}-{index}", "case_id": case_id,
                              "status": "completed", "input_tokens": input_tokens, "output_tokens": 16,
                              "cache_read_tokens": 0, "ttft_ms": first, "total_ms": first + per_token * 15})

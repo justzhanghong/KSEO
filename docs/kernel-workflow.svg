@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="390" viewBox="0 0 1280 390" role="img" aria-labelledby="title desc">
+<title id="title">Kernel Workflow</title><desc id="desc">Kernel 层内部小流程：独立 oracle、独立验证与可集成产物</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="#2475dd"/></marker></defs>
+<rect width="1280" height="390" rx="20" fill="#f5f8fc"/>
+<g font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif">
+<text x="44" y="55" font-size="30" fill="#10294a" font-weight="700">Kernel Workflow</text>
+<text x="44" y="90" font-size="17" fill="#56708b">Kernel 层内部小流程：独立 oracle、独立验证与可集成产物</text>
+<rect x="44" y="140" width="180" height="110" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="62" y="174" font-size="17" fill="#10294a" font-weight="700">提取真实调用</text>
+<text x="62" y="204" font-size="13" fill="#56708b">shape / dtype</text>
+<text x="62" y="228" font-size="13" fill="#56708b">实际输入与边界</text>
+<path d="M224 195 H242" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="246" y="140" width="180" height="110" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="264" y="174" font-size="17" fill="#10294a" font-weight="700">冻结 oracle</text>
+<text x="264" y="204" font-size="13" fill="#56708b">参考实现与 I/O</text>
+<text x="264" y="228" font-size="13" fill="#56708b">文件清单与 SHA256</text>
+<path d="M426 195 H444" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="448" y="140" width="180" height="110" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="466" y="174" font-size="17" fill="#10294a" font-weight="700">提出 Kernel 候选</text>
+<text x="466" y="204" font-size="13" fill="#56708b">独立源码与 patch</text>
+<text x="466" y="228" font-size="13" fill="#56708b">限定 editable_files</text>
+<path d="M628 195 H646" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="650" y="140" width="180" height="110" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="668" y="174" font-size="17" fill="#10294a" font-weight="700">独立正确性验证</text>
+<text x="668" y="204" font-size="13" fill="#56708b">完整 cases 与实际路径</text>
+<path d="M830 195 H848" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="852" y="140" width="180" height="110" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="870" y="174" font-size="17" fill="#10294a" font-weight="700">局部性能验证</text>
+<text x="870" y="204" font-size="13" fill="#56708b">目标硬件</text>
+<text x="870" y="228" font-size="13" fill="#56708b">相同测量条件</text>
+<path d="M1032 195 H1050" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="1054" y="140" width="180" height="110" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="1072" y="174" font-size="17" fill="#10294a" font-weight="700">返回 patch 与证据</text>
+<text x="1072" y="204" font-size="13" fill="#56708b">源码 tree</text>
+<text x="1072" y="228" font-size="13" fill="#56708b">patch / evidence hash</text>
+<rect x="44" y="290" width="1190" height="65" rx="12" fill="#e7f0ff" stroke="#d0e1fa" stroke-width="1.5"/>
+<text x="65" y="329" font-size="19" fill="#10294a">子流程在此返回。System 接手：可逆集成 → E2E 验收 → 保留或回退。</text>
+</g></svg>

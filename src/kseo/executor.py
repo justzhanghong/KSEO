@@ -105,7 +105,9 @@ def process_start_ticks(pid: int) -> str | None:
 def recover_processes(directory: Path) -> None:
     from .util import read_json
 
-    for path in directory.glob("steps/*/process.json"):
+    paths = [*directory.glob("steps/*/process.json"), *directory.glob("*/process.json"),
+             *directory.glob("proposal/process/process.json")]
+    for path in paths:
         record = read_json(path)
         pid = record.get("pid")
         if not pid or record.get("returncode") is not None or not record.get("start_ticks"):

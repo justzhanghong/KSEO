@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="600" viewBox="0 0 1280 600" role="img" aria-labelledby="title desc">
+<title id="title">Configuration / Scheduling Workflows</title><desc id="desc">这两类子流程负责提出候选；部署、测量和最终选择由 System 层统一完成</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="#2475dd"/></marker></defs>
+<rect width="1280" height="600" rx="20" fill="#f5f8fc"/>
+<g font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif">
+<text x="44" y="55" font-size="30" fill="#10294a" font-weight="700">Configuration / Scheduling Workflows</text>
+<text x="44" y="90" font-size="17" fill="#56708b">这两类子流程负责提出候选；部署、测量和最终选择由 System 层统一完成</text>
+<text x="44" y="140" font-size="23" fill="#10294a" font-weight="700">Configuration 子流程</text>
+<rect x="44" y="168" width="270" height="80" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="62" y="202" font-size="20" fill="#10294a" font-weight="700">读取当前参数</text>
+<path d="M314 208 H340" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="344" y="168" width="270" height="80" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="362" y="202" font-size="20" fill="#10294a" font-weight="700">有限搜索空间</text>
+<path d="M614 208 H640" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="644" y="168" width="270" height="80" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="662" y="202" font-size="20" fill="#10294a" font-weight="700">去重与预算检查</text>
+<path d="M914 208 H940" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="944" y="168" width="270" height="80" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="962" y="202" font-size="20" fill="#10294a" font-weight="700">返回参数候选</text>
+<text x="44" y="350" font-size="23" fill="#10294a" font-weight="700">Scheduling 子流程</text>
+<rect x="44" y="378" width="270" height="80" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="62" y="412" font-size="20" fill="#10294a" font-weight="700">读取当前热点</text>
+<path d="M314 418 H340" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="344" y="378" width="270" height="80" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="362" y="412" font-size="20" fill="#10294a" font-weight="700">形成可检验假设</text>
+<path d="M614 418 H640" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="644" y="378" width="270" height="80" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="662" y="412" font-size="20" fill="#10294a" font-weight="700">参数与 patch 约束检查</text>
+<path d="M914 418 H940" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="944" y="378" width="270" height="80" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="962" y="412" font-size="20" fill="#10294a" font-weight="700">返回可回退候选</text>
+<text x="44" y="550" font-size="18" fill="#56708b">Scheduling 承接 host、通信与调度；按当前 Profile 路由，历史经验作为辅助。</text>
+</g></svg>

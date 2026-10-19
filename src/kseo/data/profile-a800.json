@@ -213,7 +213,7 @@
     }
   },
   "optimizer": {
-    "kind": "grid",
+    "kind": "pipeline",
     "space": {
       "max_num_batched_tokens": [
         4096,
@@ -221,7 +221,42 @@
         16384
       ]
     },
-    "min_relative_improvement": 0.005
+    "min_relative_improvement": 0.005,
+    "allow_source_changes": true,
+    "max_cycles": 16,
+    "max_config_trials": 4,
+    "final_reserve_seconds": 7200,
+    "scheduling": {
+      "command": [
+        "/path/to/scheduling-agent-wrapper"
+      ],
+      "timeout_seconds": 900,
+      "allow_source_changes": true
+    },
+    "kernel": {
+      "extractor": {
+        "command": [
+          "{python}",
+          "{config_dir}/adapters/kernel_extract.py"
+        ],
+        "timeout_seconds": 900
+      },
+      "proposer": {
+        "command": [
+          "/path/to/kernel-agent-wrapper"
+        ],
+        "timeout_seconds": 1800,
+        "allow_source_changes": true
+      },
+      "validator": {
+        "command": [
+          "{python}",
+          "{config_dir}/adapters/kernel_validate.py"
+        ],
+        "timeout_seconds": 900
+      },
+      "min_speedup": 1.01
+    }
   },
   "budget": {
     "max_trials": 12,
@@ -243,5 +278,5 @@
     "lock_dir": "<shared-lock-directory>"
   },
   "final_validation": true,
-  "notes": "此 profile 是需要本地接线的草稿。示例阈值不自动继承为新模型要求；请冻结真实负载、warmup、thinking、retry、模型语义与门禁。"
+  "notes": "GEAK 思路下的分层流水线草稿。配置 sweep 有独立预算；System 按当前 Profile 调用 Scheduling/Kernel，所有候选仍需 E2E 验收。请接入真实 adapter 后再启用。"
 }

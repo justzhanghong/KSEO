@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "name": "kseo_cpu_demo",
+  "mode": "synthetic",
+  "inputs": {
+    "model": "synthetic-demo",
+    "image": "synthetic-image",
+    "workload": "synthetic-v1"
+  },
+  "context": {
+    "model_family": "synthetic",
+    "gpu_arch": "cpu-demo",
+    "backend": "synthetic",
+    "workload": "long_context",
+    "capabilities": []
+  },
+  "source": {
+    "kind": "files",
+    "path": "../../src/kseo/data",
+    "include": [
+      "demo_kernel.py"
+    ]
+  },
+  "parameters": {
+    "chunk_tokens": 512
+  },
+  "steps": [
+    {
+      "name": "preflight",
+      "command": [
+        "{python}",
+        "{package_dir}/demo_worker.py"
+      ],
+      "timeout_seconds": 15
+    },
+    {
+      "name": "profile",
+      "command": [
+        "{python}",
+        "{package_dir}/demo_worker.py"
+      ],
+      "timeout_seconds": 15
+    },
+    {
+      "name": "benchmark",
+      "command": [
+        "{python}",
+        "{package_dir}/demo_worker.py"
+      ],
+      "timeout_seconds": 15
+    },
+    {
+      "name": "quality",
+      "command": [
+        "{python}",
+        "{package_dir}/demo_worker.py"
+      ],
+      "timeout_seconds": 15
+    },
+    {
+      "name": "api",
+      "command": [
+        "{python}",
+        "{package_dir}/demo_worker.py"
+      ],
+      "timeout_seconds": 15
+    }
+  ],
+  "cleanup": {
+    "command": [
+      "{python}",
+      "{package_dir}/demo_worker.py"
+    ],
+    "timeout_seconds": 15
+  },
+  "validation": {
+    "zero_cache_reads": true,
+    "quality_samples": 6,
+    "cases": [
+      {
+        "id": "short_c1",
+        "requests": 3,
+        "input_tokens": 1024,
+        "output_tokens": 16
+      },
+      {
+        "id": "long_c2",
+        "requests": 4,
+        "input_tokens": 8192,
+        "output_tokens": 16
+      }
+    ],
+    "gates": [
+      {
+        "name": "请求全部完成",
+        "stage": "benchmark",
+        "field": "benchmark.failed_requests",
+        "op": "==",
+        "value": 0
+      },
+      {
+        "name": "长上下文 TTFT",
+        "stage": "benchmark",
+        "field": "benchmark.cases.long_c2.ttft_ms.mean",
+        "op": "<=",
+        "value": 200
+      },
+      {
+        "name": "TPOT 硬门禁",
+        "stage": "benchmark",
+        "field": "benchmark.cases.long_c2.tpot_ms.mean",
+        "op": "<=",
+        "value": 30
+      },
+      {
+        "name": "完整样本精度",
+        "stage": "quality",
+        "field": "quality.accuracy",
+        "op": ">=",
+        "value": 0.95
+      },
+      {
+        "name": "数值一致性",
+        "stage": "quality",
+        "field": "quality.checks.numerics",
+        "op": "==",
+        "value": true
+      },
+      {
+        "name": "请求隔离",
+        "stage": "api",
+        "field": "api.checks.request_isolation",
+        "op": "==",
+        "value": true
+      }
+    ],
+    "objective": {
+      "field": "benchmark.cases.long_c2.ttft_ms.mean",
+      "direction": "min"
+    }
+  },
+  "optimizer": {
+    "kind": "pipeline",
+    "space": {
+      "chunk_tokens": [
+        512,
+        1024,
+        2048
+      ]
+    },
+    "allow_source_changes": true,
+    "max_cycles": 12,
+    "final_reserve_seconds": 10,
+    "scheduling": {
+      "command": [
+        "{python}",
+        "{package_dir}/demo_pipeline_proposer.py"
+      ],
+      "timeout_seconds": 15,
+      "allow_source_changes": true
+    },
+    "kernel": {
+      "extractor": {
+        "command": [
+          "{python}",
+          "{package_dir}/demo_kernel_worker.py"
+        ],
+        "timeout_seconds": 15
+      },
+      "proposer": {
+        "command": [
+          "{python}",
+          "{package_dir}/demo_pipeline_proposer.py"
+        ],
+        "timeout_seconds": 15,
+        "allow_source_changes": true
+      },
+      "validator": {
+        "command": [
+          "{python}",
+          "{package_dir}/demo_kernel_worker.py"
+        ],
+        "timeout_seconds": 15
+      },
+      "min_speedup": 1.01
+    }
+  },
+  "budget": {
+    "max_trials": 8,
+    "max_wall_seconds": 240,
+    "max_gpu_hours": 1
+  },
+  "resources": {
+    "gpu_count": 0,
+    "keys": [
+      "kseo:cpu-demo"
+    ]
+  },
+  "final_validation": true
+}

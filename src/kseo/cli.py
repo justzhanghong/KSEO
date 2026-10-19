@@ -33,7 +33,9 @@ def parser() -> argparse.ArgumentParser:
     check.add_argument("--trial-dir", type=Path, help="独立重算此实验的原始产物")
     demo = sub.add_parser("demo", help="运行不占 GPU 的 synthetic 完整示例")
     demo.add_argument("--run-dir", type=Path, required=True)
-    demo.add_argument("--agent", action="store_true", help="演示外部提案与源码补丁接口；提案器不是 LLM")
+    variants = demo.add_mutually_exclusive_group()
+    variants.add_argument("--agent", action="store_true", help="演示外部提案与源码补丁接口；提案器不是 LLM")
+    variants.add_argument("--pipeline", action="store_true", help="演示 System、Scheduling 和独立 Kernel 子流程")
     init = sub.add_parser("init", help="从 profile 和模型、源码、镜像、服务器生成任务")
     init.add_argument("--model", required=True)
     init.add_argument("--source", required=True, type=Path)
@@ -62,6 +64,17 @@ def audit(task_path: Path, directory: Path) -> dict:
         raise KSEOError("任务合同与实验 identity 不符")
     from .source import assert_unchanged
     assert_unchanged(directory / "source", identity["source_revision"])
+    if record.get("kernel_evidence"):
+        from .workflows.kernel import audit as audit_kernel
+        from .util import confined
+        run_root = directory.parent.parent
+        evidence = record["kernel_evidence"]
+        audit_kernel(confined(run_root, evidence["directory"]), evidence, config["mode"])
+        from .source import git
+        from .util import file_digest
+        if (file_digest(directory / "proposal.diff") != evidence["patch_sha256"]
+                or git(directory / "source", "rev-parse", "HEAD^{tree}") != evidence["candidate_tree"]):
+            raise KSEOError("E2E 集成源码与 Kernel 独立证据不一致")
     results = {}
     for step in config["steps"]:
         name = step["name"]
@@ -84,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
             print("任务合同校验通过")
         elif args.command in ("run", "resume", "demo"):
             if args.command == "demo":
-                specification = demo_task(agent=args.agent)
+                specification = demo_task(agent=args.agent, pipeline=args.pipeline)
                 path = args.run_dir.resolve() / "inputs" / "task.json"
                 if path.exists():
                     raise KSEOError("示例运行目录已存在，请更换目录或使用 resume")

@@ -95,8 +95,8 @@ def validate(config: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(objective.get("field"), str) or objective.get("direction") not in ("min", "max"):
         raise KSEOError("objective 必须包含 field 和 direction=min/max")
     optimizer = config["optimizer"]
-    if optimizer.get("kind") not in ("grid", "agent"):
-        raise KSEOError("optimizer.kind 必须为 grid 或 agent")
+    if optimizer.get("kind") not in ("grid", "agent", "pipeline"):
+        raise KSEOError("optimizer.kind 必须为 grid、agent 或 pipeline")
     space = optimizer.get("space", {})
     if not isinstance(space, dict) or any(not isinstance(v, list) or not v for v in space.values()):
         raise KSEOError("optimizer.space 的每一项必须是非空候选列表")
@@ -107,6 +107,30 @@ def validate(config: dict[str, Any]) -> dict[str, Any]:
             raise KSEOError(f"baseline 参数 {key} 不在搜索空间中")
     if optimizer["kind"] == "agent":
         validate_command(optimizer)
+    if optimizer["kind"] == "pipeline":
+        if "profile" not in names:
+            raise KSEOError("pipeline 必须包含 profile 阶段")
+        positive_int(optimizer.get("max_cycles", budget_limit(config)), "max_cycles")
+        if "max_config_trials" in optimizer:
+            positive_int(optimizer["max_config_trials"], "max_config_trials")
+        if finite(optimizer.get("final_reserve_seconds", 0), "final_reserve_seconds") < 0:
+            raise KSEOError("final_reserve_seconds 不能小于 0")
+        if finite(optimizer.get("min_expected_gain", 0), "min_expected_gain") < 0:
+            raise KSEOError("min_expected_gain 不能小于 0")
+        if "scheduling" in optimizer:
+            validate_command(optimizer["scheduling"])
+        if "kernel" in optimizer:
+            kernel = optimizer["kernel"]
+            if not isinstance(kernel, dict):
+                raise KSEOError("kernel 子流程配置必须是对象")
+            for role in ("extractor", "proposer", "validator"):
+                if role not in kernel:
+                    raise KSEOError(f"Kernel 子流程缺少 {role}")
+                validate_command(kernel[role])
+            if kernel["proposer"].get("allow_source_changes", optimizer.get("allow_source_changes", False)) is not True:
+                raise KSEOError("Kernel proposer 必须开启 allow_source_changes")
+            if finite(kernel.get("min_speedup", 1), "min_speedup") < 1:
+                raise KSEOError("Kernel min_speedup 必须 >= 1")
     if finite(optimizer.get("min_relative_improvement", 0), "min_relative_improvement") < 0:
         raise KSEOError("min_relative_improvement 不能小于 0")
     budget = config["budget"]
@@ -127,6 +151,8 @@ def validate(config: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_command(step: dict) -> None:
+    if not isinstance(step, dict):
+        raise KSEOError("命令配置必须是对象")
     command = step.get("command")
     if not isinstance(command, list) or not command or any(not isinstance(x, str) or not x for x in command):
         raise KSEOError("command 必须是非空 argv 数组；不隐式启动 shell")
@@ -136,6 +162,10 @@ def validate_command(step: dict) -> None:
         raise KSEOError("env 必须是字符串键值对象")
     if any(not isinstance(k, str) or not isinstance(v, str) for k, v in step.get("env", {}).items()):
         raise KSEOError("env 只接受字符串键值")
+
+
+def budget_limit(config: dict) -> int:
+    return positive_int(config["budget"].get("max_trials"), "max_trials") * 2
 
 
 def load(path: Path) -> dict:

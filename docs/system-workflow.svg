@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="490" viewBox="0 0 1280 490" role="img" aria-labelledby="title desc">
+<title id="title">End-to-End Pipeline</title><desc id="desc">System 层大流程：候选生成、集成、评估和反馈分别归位</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="#2475dd"/></marker></defs>
+<rect width="1280" height="490" rx="20" fill="#f5f8fc"/>
+<g font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif">
+<text x="44" y="55" font-size="30" fill="#10294a" font-weight="700">End-to-End Pipeline</text>
+<text x="44" y="90" font-size="17" fill="#56708b">System 层大流程：候选生成、集成、评估和反馈分别归位</text>
+<rect x="44" y="150" width="150" height="140" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="62" y="184" font-size="17" fill="#10294a" font-weight="700">环境与基线</text>
+<text x="62" y="214" font-size="13" fill="#56708b">能力与环境检查</text>
+<text x="62" y="238" font-size="13" fill="#56708b">正确性基线</text>
+<path d="M194 212 H210" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="214" y="150" width="150" height="140" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="232" y="184" font-size="17" fill="#10294a" font-weight="700">采集 Profile</text>
+<text x="232" y="214" font-size="13" fill="#56708b">当前源码与负载</text>
+<text x="232" y="238" font-size="13" fill="#56708b">标准化热点</text>
+<path d="M364 212 H380" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="384" y="150" width="150" height="140" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="402" y="184" font-size="17" fill="#10294a" font-weight="700">诊断与路由</text>
+<text x="402" y="214" font-size="13" fill="#56708b">配置优先</text>
+<text x="402" y="238" font-size="13" fill="#56708b">热点收益排序</text>
+<path d="M534 212 H550" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="554" y="150" width="150" height="140" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="572" y="184" font-size="17" fill="#10294a" font-weight="700">调用子流程</text>
+<text x="572" y="214" font-size="13" fill="#56708b">Configuration</text>
+<text x="572" y="238" font-size="13" fill="#56708b">Scheduling</text>
+<text x="572" y="262" font-size="13" fill="#56708b">Kernel</text>
+<path d="M704 212 H720" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="724" y="150" width="150" height="140" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="742" y="184" font-size="17" fill="#10294a" font-weight="700">集成候选</text>
+<text x="742" y="214" font-size="13" fill="#56708b">隔离源码</text>
+<text x="742" y="238" font-size="13" fill="#56708b">可逆 patch</text>
+<path d="M874 212 H890" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="894" y="150" width="150" height="140" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="912" y="184" font-size="17" fill="#10294a" font-weight="700">E2E 验收</text>
+<text x="912" y="214" font-size="13" fill="#56708b">通过全部门禁</text>
+<text x="912" y="238" font-size="13" fill="#56708b">再选择 best</text>
+<path d="M1044 212 H1060" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<rect x="1064" y="150" width="150" height="140" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="1082" y="184" font-size="17" fill="#10294a" font-weight="700">最终复验与交付</text>
+<text x="1082" y="214" font-size="13" fill="#56708b">新 trial 完整复验</text>
+<text x="1082" y="238" font-size="13" fill="#56708b">证据与复现包</text>
+<text x="1040" y="139" font-size="15" fill="#2475dd">停止</text>
+<path d="M969 290 V355 H289 V294" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)" stroke-dasharray="7 5"/>
+<text x="375" y="335" font-size="17" fill="#2475dd">继续：接受或回退 → 更新方案 → 重新采集 Profile</text>
+<rect x="44" y="400" width="1170" height="60" rx="12" fill="#e7f0ff" stroke="#d0e1fa" stroke-width="1.5"/>
+<text x="65" y="437" font-size="18" fill="#10294a">Kernel 局部通过只允许提交候选；是否保留仍由 System 层 E2E 验收决定。</text>
+</g></svg>

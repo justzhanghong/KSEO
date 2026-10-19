@@ -1,55 +1,72 @@
 # Architecture
 
-![KSEO Architecture](architecture.svg)
+KSEO 按职责分层，并分别展示分层架构、System 大流程和优化子流程。架构图中的箭头只表达层间依赖；流程图中的箭头表达执行顺序。
 
-KSEO 的控制器、执行器、验收器和经验检索运行在同一 Python CLI 中。外部 coding Agent 与平台 adapter 是明确的接入点，可以连接现有工具和模型服务。
+![分层 Architecture](architecture.svg)
 
-## 数据与控制路径
+## 四层职责
 
-TaskSpec 冻结输入、负载、规则和预算。Runner 先建立正确的 baseline，然后让 Optimizer 提出参数或源码候选。候选在 run 内的独立 Git 副本运行，历史源码只读。
-
-Executor 使用 argv 启动用户配置的 adapter，并管理超时、进程组、日志和环境协议。Adapter 执行实际的 SSH、Docker、AIHub、nsys、ncu 或评测脚本，输出逐请求或逐样本原始记录。
-
-Validator 核对实验身份和产物 SHA256，重算 TTFT、TPOT 和精度，再执行当前合同的硬门禁。只有全部通过的有效候选才能更新最佳方案。停止搜索后，在新的 trial 中重新运行完整合同，并导出最佳配置、累计源码补丁和 Manifest。
-
-## 模块边界
-
-| 模块 | 实现位置 | 核心职责 |
+| 层次 | 职责 | 对应实现 |
 | --- | --- | --- |
-| CLI 与合同 | `cli.py`、`config.py` | 中文命令入口、草稿拒绝、配置校验 |
-| Runner | `runner.py` | 状态、预算、baseline、候选、最终复验和报告 |
-| Optimizer | `optimizer.py` | Grid search、外部 Agent 请求与提案约束 |
-| Source | `source.py` | 冻结、独立副本、patch 检查和累积导出 |
-| Executor | `executor.py` | argv、超时、进程组、日志与残留进程恢复 |
-| Validator | `validation.py` | 原始记录重算、身份和硬门禁 |
-| Knowledge | `knowledge.py` | 条件检索、事实与假设、待审导入 |
-| Resource leases | `locking.py` | 控制器互斥、共享资源租约、失败清理保护 |
-| Adapter SDK | `adapter.py` | 为现有脚本生成身份与原始产物协议 |
+| L1 目标与上下文 | 模型、硬件、Workload、能力、目标、质量和预算 | TaskSpec、context、业务 profile |
+| L2 System 编排 | 基线、配置优先策略、热点路由、候选集成、E2E 选择和最终交付 | workflows/system.py、workflows/pipeline.py |
+| L3 优化子流程 | Configuration、Scheduling、Kernel 分别产生候选和证据 | workflows/configuration.py、scheduling.py、kernel.py |
+| L4 共享运行基础 | 执行、隔离源码、独立 Validator、状态、资源、Profile 和经验 | Runner、Executor、Source、Validator、profiling、Knowledge |
 
-## 状态和失败类型
+Runner 管理一个 trial 的生命周期和可靠执行。System Workflow 决定本轮该运行哪个子流程、如何集成结果及是否继续优化。一个子流程可以包含多个内部阶段，阶段按优化职责组织。
 
-```mermaid
-stateDiagram-v2
-    [*] --> RUNNING
-    RUNNING --> BASELINE_INVALID: 基线部署或正确性失败
-    RUNNING --> CLEANUP_FAILED: 资源清理失败
-    RUNNING --> INTERRUPTED: 用户中断
-    INTERRUPTED --> RUNNING: 恢复 清理 重新执行
-    CLEANUP_FAILED --> RUNNING: 同一 owner 恢复并清理
-    RUNNING --> NO_VALID_CANDIDATE: 未得到满足全部门禁的候选
-    RUNNING --> BUDGET_EXHAUSTED_UNVALIDATED: 有候选但未完成最终复验
-    RUNNING --> FINAL_VALIDATION_FAILED: 最终合同未通过
-    RUNNING --> COMPLETED: 最终完整合同通过
-```
+## System 外部大流程
 
-trial 还区分 `DEPLOYMENT_FAILED`、`EXECUTION_FAILED`、`INVALID_MEASUREMENT`、`REJECTED_PERFORMANCE`、`REJECTED_VALIDATION`、`VALID_NO_GAIN` 和 `ACCEPTED`。`COMPLETED` 只表示声明类型下的合同通过；synthetic 和 replay 始终不能解释为新的 measured 收益。
+![System 大流程](system-workflow.svg)
 
-## 恢复与可信边界
+环境和基线通过后，System 使用当前配置与源码的 Profile 选择优化路径。Configuration sweep 先执行，并有独立试验上限；之后按当前热点的类型、占比和可改善空间进入 Scheduling 或 Kernel。
 
-状态使用临时文件加原子 rename 保存，事件日志追加并 fsync。每个 trial、step 和原始产物单独留档，便于重新验收。控制器完成结果写入但尚未更新 best 时中断，恢复过程会重新执行候选选择。
+所有候选统一进入隔离源码、部署、测量和完整合同验收。只有全部门禁通过且满足改善要求的候选才能替换 best。接受候选后使用该候选实际采集的 Profile 继续诊断，不能沿用旧配置的热点排名。
 
-资源锁与租约分别保存。进程异常退出会释放 OS 文件锁，但未正常结束的租约仍能阻止其他 owner 直接占用同一资源。同一 owner 恢复时先检查本地进程 PID 与 start time，再调用远端幂等 cleanup。共享锁需要可靠支持 flock 与原子 rename 的文件系统，且所有入口使用同一锁目录。
+热点排序采用 `share × (1 - 1 / achievable_speedup)` 估计可能节省的时间比例。估计值只用于路由和预算；gpu_time 可能含重叠时间，实际端到端收益仍由 E2E 测量判定。
 
-KSEO 不提供网络调度器、OS sandbox、自动发现全部 GPU 使用者或任意模型结构适配。GPU 归属、实际 runtime 核查和远端任务幂等性由 adapter 实现，Agent 的命令权限由宿主环境限制。
+最终复验的预算可以预留。搜索结束时，在新的 trial 中运行完整合同，再输出配置、累积 patch、Manifest、原始证据和中文报告。
 
-最终镜像是否真正固化源码、是否在独立客户端验证、是否使用留出数据以及稳定性持续多久，都必须写进 profile 和 adapter。新的 trial 并不自动等价于新的镜像或新的测试集。
+## Configuration 与 Scheduling 内部小流程
+
+![Configuration 与 Scheduling](optimization-workflows.svg)
+
+Configuration 负责有限的 flags、env 和 backend 参数候选，包含去重、失败分类和预算控制。它不自行宣布候选已获性能收益。
+
+Scheduling 接收当前 host、通信或调度热点，由外部 Agent 形成一个可检验假设，返回受参数空间约束的配置或可回退 patch。部署和端到端验证由 System 统一执行。
+
+## Kernel 内部小流程
+
+![Kernel 小流程](kernel-workflow.svg)
+
+Kernel Workflow 从选定热点提取实际调用和测试 case，冻结参考实现与 I/O oracle，再让独立 proposer 生成 patch。实际 shape、dtype、stride 和数值边界由目标后端 extractor 负责提供。
+
+局部 validator 在独立源码副本上执行完整 case、数值检查、路径检查和局部性能测试。正确性与局部性能可以由同一个独立 validator 命令依次完成。oracle 的文件集合与 SHA256 在提案和验证后均被重查，修改 oracle 会使候选失效。
+
+patch 只能修改 extractor 声明的 editable_files。局部证据绑定 patch SHA256 与候选源码 tree；System 集成时再次核对，确保被测的局部候选与实际集成内容一致。
+
+局部通过后仅返回候选。Kernel 加速而 E2E 回退时，流程记录 `LOCAL_PASS_E2E_REJECTED`，保留原 best。`kseo validate --trial-dir` 会同时审计 Kernel 独立证据和 E2E 原始结果。
+
+## 参考 GEAK 的流程原则
+
+| GEAK 的设计原则 | KSEO 的整合方式 |
+| --- | --- |
+| System 层包裹独立 Kernel 工作流 | System Workflow 调用独立 Kernel Workflow，二者有各自阶段与产物 |
+| 先尝试成本较低的配置和 backend 调整 | Configuration 有独立预算，先于热点源码工作执行 |
+| profiling 与 Amdahl 选择热点 | 使用标准化 Profile，路由至 Scheduling 或 Kernel |
+| 抽取独立任务并保持参考 oracle 不变 | extractor、冻结文件清单、独立 validator 和 oracle hash |
+| patch 集成后重新检验整体效果 | System 统一 E2E 门禁、best 选择、回退和重采样 |
+
+这些原则参考 [GEAK System Workflow](https://github.com/AMD-AGI/GEAK/tree/main/e2e_workflow) 和 [Kernel Workflow](https://github.com/AMD-AGI/GEAK/tree/main/kernel_workflow)。KSEO 的实现按自身的 Python CLI、现有工具基础和模型经验重新组织；当前没有迁移 GEAK 的 AMD 专用 Kernel、完整角色体系或多 worker 调度器。
+
+任务书、源码、原始实验、社区资料、Profile 和数值测试均可提供输入。历史任务的模型差异和验收经验沉淀为 profile、adapter 与 Knowledge，核心流水线跨模型复用。
+
+## 运行产物和恢复
+
+`workflow-tree.json` 关联 System 试验、子流程及 Kernel 内部阶段。`workflows/` 保存请求、提案、冻结 oracle 和局部结果，`trials/` 保存 E2E 实测与验收，`learned-experience.json` 保存本次实验形成的条件化经验。
+
+待集成提案会持久化，中断后可以继续提交给 System。子流程运行中崩溃时，恢复过程先终止身份匹配的残留本地进程，再调用 cleanup adapter，标记中断阶段并重新调度。所有入口仍需共用资源锁目录与统一 GPU 身份。
+
+外部 Agent 的 OS 权限、真实后端的 GPU 采样和远端任务清理、模型语义适配、最终镜像固化及长期稳定性由对应 adapter 实现。CPU 示例用于验证流水线，不能解释为真实模型的新性能收益。
+
+四张 SVG 的源生成器是 `tools/render_architecture.py`。可通过 `python3 tools/render_architecture.py` 重建，图中不使用跨层回路线。

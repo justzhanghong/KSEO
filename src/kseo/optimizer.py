@@ -24,19 +24,25 @@ def grid(config: dict, tried: set[str]) -> dict | None:
     return None
 
 
-def agent(config: dict, state: dict, directory: Path, variables: dict, environment: dict, remaining: float) -> dict | None:
+def agent(config: dict, state: dict, directory: Path, variables: dict, environment: dict, remaining: float,
+          *, workflow: dict | None = None) -> dict | None:
     directory.mkdir(parents=True, exist_ok=True)
     request_path = directory / "request.json"
     proposal_path = directory / "proposal.json"
     proposal_path.unlink(missing_ok=True)
     extra = Path(config["knowledge"]) if config.get("knowledge") else None
     cards = [c for c in load_cards(extra) if c.get("status") != "NEEDS_REVIEW"]
+    learned = Path(variables["run_dir"]) / "learned-experience.json"
+    if learned.exists():
+        cards += read_json(learned)["cards"]
     request = {"schema_version": 1, "context": config["context"], "contract": config["validation"],
                "parameters": config["parameters"], "space": config["optimizer"].get("space", {}),
                "history": state["trials"], "best": state.get("best"),
                "source_dir": variables["source_dir"], "proposal_dir": str(directory),
                "experience": retrieve(config["context"], cards),
                "instructions": "只向 proposal_dir 写 proposal.json 和可选 patch.diff。不得修改 source_dir、合同或验收器。每次只提出一个可检验假设。"}
+    if workflow is not None:
+        request["workflow"] = workflow
     write_json(request_path, request)
     env = {**environment, "KSEO_AGENT_REQUEST": str(request_path), "KSEO_AGENT_PROPOSAL": str(proposal_path)}
     execute(config["optimizer"], directory / "process", {**variables, "proposal_dir": str(directory)}, env, remaining=remaining)

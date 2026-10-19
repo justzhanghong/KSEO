@@ -119,6 +119,9 @@ def ingest_stage(path: Path, identity: dict, mode: str, stage: str, policy: dict
         raise KSEOError("checks 和 runtime 必须是对象")
     if stage == "benchmark":
         result.update(benchmark(payload, path.parent, policy))
+    if stage == "profile" and "profile" in payload:
+        from .profiling import normalize
+        result["profile"] = normalize(payload["profile"])
     if stage == "quality" and ("samples_file" in payload or policy.get("quality_samples") is not None):
         result.update(quality(payload, path.parent, policy))
     return result

@@ -9,10 +9,13 @@ from .util import write_json
 
 
 def emit(*, checks: dict | None = None, runtime: dict | None = None,
-         requests: list[dict] | None = None, samples: list[dict] | None = None) -> Path:
+         requests: list[dict] | None = None, samples: list[dict] | None = None,
+         profile: dict | None = None) -> Path:
     directory = Path(os.environ["KSEO_STAGE_DIR"])
     result = {"schema_version": 1, "identity": json.loads(Path(os.environ["KSEO_IDENTITY_PATH"]).read_text()),
               "kind": os.environ["KSEO_MODE"], "checks": checks or {}, "runtime": runtime or {}}
+    if profile is not None:
+        result["profile"] = profile
     for key, rows in (("requests_file", requests), ("samples_file", samples)):
         if rows is not None:
             path = directory / ("requests.jsonl" if key == "requests_file" else "samples.jsonl")

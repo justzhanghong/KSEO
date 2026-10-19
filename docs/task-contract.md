@@ -13,12 +13,30 @@
 | `steps` | 依次执行的命令阶段，每步要求 argv 数组和超时 |
 | `cleanup` | 按 run_id/trial_id 精确查找和清理服务的幂等命令 |
 | `validation` | case、质量样本数、硬门禁和 objective |
-| `optimizer` | `grid` 或 `agent`、参数空间和最小相对改善幅度 |
+| `optimizer` | `pipeline`、`grid` 或 `agent`、参数空间和最小相对改善幅度 |
 | `budget` | baseline 与候选次数、累计时间、GPU 小时和有限重试 |
 | `resources` | GPU 数量、统一资源标识、共享锁目录 |
 | `final_validation` | 新 trial 完整复验；真实模式必须开启 |
 
-可执行示例见 `examples/demo/task.json` 和 `task-agent.json`；A800 草稿见包内 `data/profile-a800.json`，也可通过 `kseo init` 输出。
+可执行示例见 `examples/demo/task-pipeline.json`、`task.json` 和 `task-agent.json`；A800 草稿见包内 `data/profile-a800.json`，也可通过 `kseo init` 输出。
+
+## System 与子流程配置
+
+推荐 `optimizer.kind=pipeline`。System 先执行 Configuration sweep，再根据当前 Profile 调用 Scheduling 或 Kernel。`steps` 描述每个 E2E trial 的验证过程；`optimizer` 描述如何产生下一个候选，两者的职责不同。
+
+| pipeline 字段 | 含义 |
+| --- | --- |
+| `space` | Configuration 与 Agent 共同遵守的有限参数空间 |
+| `max_config_trials` | Configuration 的候选尝试上限，默认 `max(1, min(4, max_trials // 2))` |
+| `max_cycles` | 所有子流程调用上限，包含局部失败、无提案和中断；默认 `max_trials × 2` |
+| `min_expected_gain` | 热点预计可节省时间比例的下限；只用于路由 |
+| `final_reserve_seconds` | 剩余时间达到此值时停止提出新候选，预留最终复验 |
+| `scheduling` | 可选的 Scheduling Agent 命令、超时与源码修改权限 |
+| `kernel` | 可选的 extractor、proposer、validator 命令及 `min_speedup` |
+
+pipeline 必须配置 `profile` step，其输出遵守 [标准化 Profile 协议](adapters.md#标准化-profile)。Kernel 必须明确开启源码修改，并提供三个独立配置的角色。最小局部加速比 `min_speedup` 默认 1.0；通过它仍须进入 E2E 验收。
+
+完整配置见 `task-pipeline.json`。外部 Agent 与 Kernel 角色的调用方式见 [工作流协议](agent-workflow.md)。
 
 ## 阶段和命令
 
@@ -59,3 +77,5 @@ Feature hook、GSM8K 门槛和样本数是模型与合同特定规则。早期�
 GPU 小时按声明 GPU 数量乘控制器计费时间保守估算，包含加载、构建、等待和失败开销，并非平台账单。正常中断期间不计费；进程崩溃后不确定是否释放资源的时间保守计入预算。最终复验也消耗预算，预算不足时保留最佳候选并报告未完成复验。
 
 Grid search 在空间耗尽或预算到达后停止。Agent 可以显式 stop。相同源码、patch 和参数的有效重复提案会停止循环；缺少可行候选、资源清理失败和最终验证失败都有独立状态。
+
+pipeline 还会在没有可执行热点、达到子流程次数上限或进入最终复验预留时间时停止。Kernel 局部失败消耗时间与子流程预算，不创建 E2E trial；局部通过后发生 E2E 失败时保留原 best。子流程与 E2E 的状态分别写入 `workflows/` 和 `trials/`，并通过 `workflow-tree.json` 关联。

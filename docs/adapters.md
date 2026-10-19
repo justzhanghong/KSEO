@@ -61,6 +61,70 @@ emit(samples=[{
 
 Helper 为原始 JSONL 计算 SHA256，Validator 再验证 hash、长度、数量和计分。直接修改 mean 或在报告中写 PASS 不会绕过原始记录重算。
 
+## 标准化 Profile
+
+pipeline 要求 profile 阶段在常规结果 envelope 中增加 `profile` 字段。例如：
+
+```json
+{
+  "profile": {
+    "scope": "critical_path",
+    "hotspots": [{
+      "id": "decode_attention",
+      "kind": "kernel",
+      "share": 0.4,
+      "achievable_speedup": 1.5,
+      "editable": true,
+      "evidence": "trace/attention-summary.json"
+    }]
+  }
+}
+```
+
+这是字段片段；实际 result.json 仍须包含 schema_version、identity、kind、checks 和 runtime。可用 `emit(..., profile=profile)` 输出。原始 trace 和统计方法请保存在 stage 目录；KSEO 校验字段并用于路由，不自行解析 Nsight 或 rocprof trace。
+
+`scope` 为 `critical_path` 或 `gpu_time`；前者各热点 share 合计不能超过 1。热点 id 唯一，kind 为 `kernel`、`scheduling`、`communication` 或 `host`；share 在 [0,1]，achievable_speedup 至少 1，editable 是 boolean。
+
+System 按 `share × (1 - 1 / achievable_speedup)` 排序。可编辑的 kernel 进入 Kernel，其他三类进入 Scheduling；未配置对应子流程的热点跳过。gpu_time 可能重叠，该估计不构成 E2E 收益证据。每个被接受候选必须使用它自身采集的 Profile 继续路由。
+
+## Kernel 局部接口
+
+extractor 与 validator 使用同一执行器，额外支持 `{kernel_dir}` 和以下环境变量：
+
+| 变量 | 内容 |
+| --- | --- |
+| `KSEO_KERNEL_PHASE` | `extract` 或 `validate` |
+| `KSEO_KERNEL_REQUEST` | 选定 hotspot、identity、source_dir 和 reference_dir |
+| `KSEO_KERNEL_REFERENCE_DIR` | oracle 目录；提取后冻结 |
+| `KSEO_KERNEL_RESULT` | 当前角色应输出的 JSON 路径 |
+| `KSEO_IDENTITY_PATH` | 当前角色身份；validator 含候选、patch 和 oracle 身份 |
+| `KSEO_KERNEL_CANDIDATE_DIR` | 仅 validate 阶段提供的独立候选源码目录 |
+
+另有 KSEO_SOURCE_DIR、KSEO_RUN_DIR、KSEO_MODE。extractor 应向 oracle 目录写入参考实现、实际 shape/dtype/stride、固定输入与期望输出等材料，再输出：
+
+```python
+result = {"schema_version": 1, "identity": identity, "kind": mode,
+          "cases": ["shape_001", "shape_002"],
+          "editable_files": ["backend/attention.py"]}
+```
+
+cases 必须非空且唯一。editable_files 是候选源码中允许修改的精确相对路径。oracle 不能为空且不能包含 symlink；KSEO 在提案和验证后重新核对其完整文件集合及 SHA256。
+
+validator 从 KSEO_IDENTITY_PATH 重新读取身份，使用冻结 oracle 独立检查候选，输出：
+
+```python
+result = {"schema_version": 1, "identity": identity, "kind": mode,
+          "oracle_sha256": identity["oracle_sha256"],
+          "passed_cases": ["shape_001", "shape_002"],
+          "checks": {"path_exercised": actual_path_exercised,
+                     "numerics": actual_numerics_pass},
+          "speedup": measured_baseline_time / measured_candidate_time}
+```
+
+passed_cases 必须与提取时的 cases 完全一致，两个检查必须为 true，加速比须达到合同阈值。原始计时、warmup、误差容限和路径证据由 validator 保存；控制器校验摘要及身份，不替代后端正确性测试。CPU 示例可参考 `src/kseo/demo_kernel_worker.py`，其计时模型明确为 synthetic。
+
+远端 Kernel 任务仍应使用 run_id/workflow_id 标识，由 cleanup adapter 精确清理。恢复调用会额外提供 `KSEO_WORKFLOW_DIR`；本地进程恢复不能代替远端任务清理。
+
 ## 真实 HTTP benchmark
 
 已提供 `python -m kseo.http_benchmark`，可对已有 OpenAI-compatible Chat Completions 服务进行 measured 测量。它使用流式响应中的实际 usage，包含 reasoning/tool delta 首次到达，并记录每个 case 的逐请求时间。

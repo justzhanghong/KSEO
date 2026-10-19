@@ -60,6 +60,8 @@ class Runner:
                "KSEO_PARAMETERS_PATH": str(trial_dir / "parameters.json"),
                "KSEO_RESULT_PATH": str(directory / "result.json"), "KSEO_STAGE_DIR": str(directory),
                "KSEO_MODE": self.config["mode"]}
+        if self.state.get("active_workflow"):
+            env["KSEO_WORKFLOW_DIR"] = str(self.root / self.state["active_workflow"])
         return variables, env
 
     def cleanup(self, trial: dict, *, recovery: bool = False) -> bool:
@@ -91,7 +93,8 @@ class Runner:
             self.save()
             return False
 
-    def trial(self, parameters: dict, phase: str, base: Path, patch: Path | None, hypothesis: str) -> dict:
+    def trial(self, parameters: dict, phase: str, base: Path, patch: Path | None, hypothesis: str,
+              *, kernel_evidence: dict | None = None, workflow: dict | None = None) -> dict:
         number = len(self.state["trials"])
         identifier = f"t{number:04d}"
         relative = f"trials/{identifier}"
@@ -105,6 +108,11 @@ class Runner:
         record = {"id": identifier, "directory": relative, "phase": phase, "status": "PREPARING",
                   "parameters": parameters, "hypothesis": hypothesis, "results": {}, "gates": [],
                   "started_at": now(), "cleanup": "PENDING"}
+        if kernel_evidence:
+            record["kernel_evidence"] = kernel_evidence
+        if workflow:
+            record["workflow_attempt"] = workflow["workflow_attempt"]
+            record["workflow_lane"] = workflow["workflow_lane"]
         self.state["trials"].append(record)
         self.state["active_trial"] = identifier
         self.lease["clean"] = False
@@ -112,6 +120,11 @@ class Runner:
         self.event("trial_start", trial=identifier, phase=phase)
         try:
             revision = source.fork(base, directory / "source", patch)
+            if kernel_evidence:
+                if patch is None or file_digest(patch) != kernel_evidence["patch_sha256"]:
+                    raise KSEOError("System 集成的 Kernel patch 与局部证据不一致")
+                if source.git(directory / "source", "rev-parse", "HEAD^{tree}") != kernel_evidence["candidate_tree"]:
+                    raise KSEOError("System 集成的源码 tree 与 Kernel 局部验证不一致")
             if patch:
                 (directory / "proposal.diff").write_bytes(patch.read_bytes())
             write_json(directory / "parameters.json", parameters)
@@ -199,6 +212,23 @@ class Runner:
         write_json(self.root / trial["directory"] / "trial.json", trial)
 
     def recover(self) -> bool:
+        active_workflow = self.state.get("active_workflow")
+        if active_workflow:
+            self.lease["clean"] = False
+            recover_processes(self.root / active_workflow)
+            attempt = next(item for item in self.state["pipeline"]["attempts"] if item["directory"] == active_workflow)
+            parent = next(item for item in self.state["trials"] if item["id"] == attempt["parent_trial"])
+            if not self.cleanup(parent, recovery=True):
+                return False
+            attempt["status"] = "INTERRUPTED"
+            phases_path = self.root / active_workflow / "kernel_phases.json"
+            if phases_path.exists():
+                phases = read_json(phases_path)
+                write_json(phases_path, {name: "INTERRUPTED" if outcome == "RUNNING" else outcome for name, outcome in phases.items()})
+            write_json(self.root / active_workflow / "workflow.json", attempt)
+            self.state["active_workflow"] = None
+            self.event("interrupted_workflow_recovered", workflow=attempt["id"])
+            self.save()
         active = self.state.get("active_trial")
         if not active:
             return True
@@ -215,91 +245,23 @@ class Runner:
         return True
 
     def loop(self) -> None:
-        if not self.recover():
-            return
-        self.check_tools()
-        for recorded in self.state["trials"]:
-            if recorded["status"] == "VALID" and recorded["phase"] != "final":
-                self.consider(recorded)
-        base = self.root / "source-base"
-        revision = source.freeze(self.config, base, Path(self.state["config_dir"]))
-        self.state["baseline_source_revision"] = revision
-        self.save()
-        retryable = {"INTERRUPTED", "DEPLOYMENT_FAILED", "EXECUTION_FAILED"}
-        max_attempts = self.config["budget"].get("max_attempts_per_candidate", 2)
-        baselines = [trial for trial in self.state["trials"] if trial["phase"] == "baseline"]
-        if baselines and baselines[-1]["status"] in retryable and len(baselines) < max_attempts:
-            baselines = []
-        if not baselines:
-            baseline = self.trial(self.config["parameters"], "baseline", base, None, "冻结基线与完整验证")
-            self.consider(baseline)
-        else:
-            baseline = baselines[-1]
-        if self.state["status"] == "CLEANUP_FAILED":
-            return
-        if baseline["status"] not in ("ACCEPTED", "VALID", "VALID_NO_GAIN", "BASELINE_TARGET_NOT_MET"):
-            self.state["status"] = "BASELINE_INVALID"
-            return
-        reason = "SEARCH_EXHAUSTED"
-        while len([trial for trial in self.state["trials"] if trial["phase"] != "final"]) < self.config["budget"]["max_trials"]:
-            if self.remaining() <= 0:
-                reason = "BUDGET_EXHAUSTED"
-                break
-            best = self.state.get("best")
-            selected_base = self.root / best["directory"] / "source" if best else base
-            if self.config["optimizer"]["kind"] == "grid":
-                groups = {}
-                for previous in self.state["trials"]:
-                    if previous["phase"] != "final":
-                        groups.setdefault(canonical(previous["parameters"]), []).append(previous)
-                tried = {key for key, attempts in groups.items()
-                         if len(attempts) >= max_attempts or any(item["status"] not in retryable for item in attempts)}
-                proposal = optimizer.grid(self.config, tried)
-            else:
-                number = len(self.state["trials"])
-                proposal_dir = self.root / "proposals" / f"p{number:04d}"
-                variables = {"run_dir": str(self.root), "source_dir": str(selected_base),
-                             "package_dir": str(Path(__file__).parent), "config_dir": self.state["config_dir"],
-                             "python": sys.executable}
-                before = source.git(selected_base, "rev-parse", "HEAD")
-                proposal = optimizer.agent(self.config, self.state, proposal_dir, variables, {}, self.remaining())
-                source.assert_unchanged(selected_base, before)
-            if proposal is None:
-                break
-            patch_hash = file_digest(proposal["patch"]) if proposal["patch"] else ""
-            fingerprint = optimizer.signature(proposal["parameters"], source.git(selected_base, "rev-parse", "HEAD"), patch_hash)
-            if any(trial.get("proposal_sha256") == fingerprint and trial["status"] not in retryable for trial in self.state["trials"]):
-                reason = "DUPLICATE_PROPOSAL"
-                break
-            trial = self.trial(proposal["parameters"], "candidate", selected_base, proposal["patch"], proposal["hypothesis"])
-            trial["proposal_sha256"] = fingerprint
-            self.consider(trial)
-            self.save()
-            if self.state["status"] == "CLEANUP_FAILED":
-                return
-        else:
-            reason = "TRIAL_LIMIT_REACHED"
-        self.state["stop_reason"] = reason
-        best = self.state.get("best")
-        if not best:
-            self.state["status"] = "NO_VALID_CANDIDATE"
-        elif self.remaining() <= 0:
-            self.state["status"] = "BUDGET_EXHAUSTED_UNVALIDATED"
-        elif self.config.get("final_validation", True):
-            final = self.trial(best["parameters"], "final", self.root / best["directory"] / "source", None, "独立重新运行最佳候选的完整合同")
-            if self.state["status"] == "CLEANUP_FAILED":
-                return
-            self.state["final_trial"] = final["id"]
-            self.state["status"] = "COMPLETED" if final["status"] == "VALID" else "FINAL_VALIDATION_FAILED"
-        else:
-            self.state["status"] = "CANDIDATE_ONLY"
+        from .workflows.system import SystemWorkflow
+        SystemWorkflow(self).run()
 
     def check_tools(self) -> None:
         variables = {"config_dir": self.state["config_dir"], "package_dir": str(Path(__file__).parent), "python": sys.executable}
-        paths = set(Path(__file__).parent.glob("*.py"))
-        commands = list(self.config["steps"]) + [item for item in (self.config.get("cleanup"),) if item]
-        if self.config["optimizer"]["kind"] == "agent":
-            commands.append(self.config["optimizer"])
+        paths = set(Path(__file__).parent.rglob("*.py"))
+        commands = []
+        def collect(value):
+            if isinstance(value, dict):
+                if isinstance(value.get("command"), list):
+                    commands.append(value)
+                for child in value.values():
+                    collect(child)
+            elif isinstance(value, list):
+                for child in value:
+                    collect(child)
+        collect(self.config)
         for command in commands:
             for arg in command["command"]:
                 expanded = expand(arg, variables)
@@ -331,6 +293,18 @@ class Runner:
         for trial in self.state["trials"]:
             lines.append(f"| {trial['id']} | {trial['phase']} | {trial['status']} | {trial.get('score', '')} |")
         lines += [""]
+        if self.state.get("pipeline"):
+            pipeline = self.state["pipeline"]
+            tree = {"system_status": self.state["status"], "profile_source": pipeline.get("profile_source"), "workflows": []}
+            lines += ["## 分层流水线", "", "| 子流程 | 热点 | 局部与集成结果 | E2E trial |", "| --- | --- | --- | --- |"]
+            for attempt in pipeline["attempts"]:
+                phases_path = self.root / attempt["directory"] / "kernel_phases.json"
+                phases = read_json(phases_path) if phases_path.exists() else {}
+                tree["workflows"].append({**attempt, "kernel_phases": phases})
+                hotspot = (attempt.get("hotspot") or {}).get("id", "")
+                lines.append(f"| {attempt['lane']} | {hotspot} | {attempt['status']} | {attempt.get('trial', '')} |")
+            write_json(self.root / "workflow-tree.json", tree)
+            lines += ["", "`workflow-tree.json` 保存 System 大流程与 Kernel 内部阶段的对应关系。", ""]
         if best:
             bundle = self.root / "bundle"
             bundle.mkdir(exist_ok=True)
@@ -377,6 +351,8 @@ class Runner:
                 try:
                     self.loop()
                 except KeyboardInterrupt:
+                    if self.state.get("active_workflow"):
+                        self.recover()
                     self.state["status"] = "INTERRUPTED" if lease["clean"] else "CLEANUP_FAILED"
                 except (KSEOError, OSError) as exc:
                     self.state["status"] = "CONTROLLER_FAILED"

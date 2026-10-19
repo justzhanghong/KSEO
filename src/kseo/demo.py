@@ -1,9 +1,10 @@
 """可运行示例的合同构造。"""
 
 from pathlib import Path
+from copy import deepcopy
 
 
-def task(*, agent: bool = False) -> dict:
+def task(*, agent: bool = False, pipeline: bool = False) -> dict:
     command = ["{python}", "{package_dir}/demo_worker.py"]
     config = {"schema_version": 1, "name": "kseo_cpu_demo", "mode": "synthetic",
               "inputs": {"model": "synthetic-demo", "image": "synthetic-image", "workload": "synthetic-v1"},
@@ -30,4 +31,14 @@ def task(*, agent: bool = False) -> dict:
     if agent:
         config["optimizer"].update({"kind": "agent", "command": ["{python}", "{package_dir}/demo_proposer.py"],
                                     "timeout_seconds": 15, "allow_source_changes": True})
+    if pipeline:
+        proposer = {"command": ["{python}", "{package_dir}/demo_pipeline_proposer.py"],
+                    "timeout_seconds": 15, "allow_source_changes": True}
+        worker = {"command": ["{python}", "{package_dir}/demo_kernel_worker.py"], "timeout_seconds": 15}
+        config["optimizer"].update({"kind": "pipeline", "allow_source_changes": True,
+                                    "max_cycles": 12, "final_reserve_seconds": 10,
+                                    "scheduling": deepcopy(proposer),
+                                    "kernel": {"extractor": deepcopy(worker), "proposer": deepcopy(proposer), "validator": deepcopy(worker),
+                                               "min_speedup": 1.01}})
+        config["budget"].update({"max_trials": 8, "max_wall_seconds": 240})
     return config

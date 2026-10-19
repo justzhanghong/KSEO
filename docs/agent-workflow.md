@@ -1,6 +1,17 @@
 # Agent 工作流与提案协议
 
-KSEO 可以接现有 coding Agent。内置 `demo_proposer.py` 是确定性协议示例，不是 LLM，也不声称具备自主源码分析能力。真实 Agent 通过自己的 CLI 或包装脚本读取请求、分析热点并返回提案。
+KSEO 的 System 调用 Configuration、Scheduling 和 Kernel 子流程。后两个子流程可以接现有 coding Agent。内置 proposer 是确定性 CPU 协议示例；真实 Agent 通过自己的 CLI 或包装脚本读取请求、分析热点并返回提案。
+
+## 分层流水线
+
+`optimizer.kind=pipeline` 的完整例子见 `examples/demo/task-pipeline.json`，可执行 `kseo demo --pipeline`。内部顺序和产物见 [Architecture](architecture.md)。
+
+- Configuration 先搜索受约束参数，有独立候选次数上限。
+- Scheduling 接收 `workflow.lane=scheduling` 和选定 `workflow.hotspot`，返回参数或源码 patch。
+- Kernel 先提取独立任务并冻结 oracle，再调用 proposer，最后调用独立 validator；仅将局部通过的 patch 交回 System。
+- System 对每个候选执行完整 E2E 合同，更新 best 和 Profile，再决定下一轮。
+
+以下提案协议同时供基础 `agent` 模式和上述两个 proposer 使用。
 
 ## 配置
 
@@ -17,7 +28,9 @@ KSEO 可以接现有 coding Agent。内置 `demo_proposer.py` 是确定性协议
 
 命令从 `KSEO_AGENT_REQUEST` 读取 request.json，向 `KSEO_AGENT_PROPOSAL` 指定的位置写 proposal.json。允许参数来自合同 space；未列入 space 的参数保持 baseline 值。
 
-request 含当前合同、context、历史结果、最佳候选、源码目录、proposal_dir 及匹配经验。原始 profiling 和各阶段产物可通过 history 中的 trial directory 在 run_dir 下定位。需要更细的瓶颈信息时，应先检查实际 profiling 产物，不从 kernel 名称猜测端到端收益。
+request 含当前合同、context、历史结果、最佳候选、源码目录、proposal_dir 及匹配经验。本次流水线已形成的 `learned-experience.json` 也参与检索。原始 profiling 和各阶段产物可通过 history 中的 trial directory 在 run_dir 下定位。需要更细的瓶颈信息时，应先检查实际 profiling 产物，不从 kernel 名称猜测端到端收益。
+
+Kernel proposer 还会收到 `workflow.oracle_dir`、`oracle_sha256`、`cases` 和 `editable_files`。oracle 只读，patch 必须只修改 editable_files；直接修改 source_dir 或 oracle 会使候选失效。
 
 ## 提案
 
@@ -31,11 +44,21 @@ request 含当前合同、context、历史结果、最佳候选、源码目录�
 
 patch 是可选项，相对 proposal_dir 解析，必须位于该目录内。KSEO 在新的源码副本上执行 `git apply --check`、应用并提交补丁；失败不会污染历史源码。未开启 allow_source_changes 时拒绝 patch。
 
+`parameters` 必须包含合同的完整参数集合；上例假定合同只有 `chunk_tokens`。Kernel proposer 必须提供实际 patch。参数未列入 space 时，其值必须保持合同 baseline 值。
+
 完成探索时输出：
 
 ```json
 {"stop": true, "reason": "当前预算下没有足够证据支持下一个候选"}
 ```
+
+## Kernel extractor 与 validator
+
+三个角色分别配置在 `optimizer.kernel.extractor`、`proposer`、`validator`，每个都使用 `command` 数组和 `timeout_seconds`。`kernel.min_speedup` 控制局部收益下限。extractor 与 validator 接口见 [Kernel adapter](adapters.md#kernel-局部接口)。
+
+extractor 负责从选中热点建立实际调用、输入输出和测试 case。KSEO 随后冻结 oracle 文件集合与 SHA256。proposer 返回 patch 后，控制器在新的 Git 副本应用它，核对修改文件范围，再启动独立 validator。validator 必须核对真实执行路径、数值结果、完整 case 和局部加速比，不能让 proposer 自己写 PASS 代替验证。
+
+局部证据绑定 oracle、patch 与候选 tree。System 集成同一 patch 时重查身份并执行 E2E 验收。局部通过而 E2E 不通过记为 `LOCAL_PASS_E2E_REJECTED`。配置恢复时可继续使用已持久化的待集成提案；执行中断则先清理并重试子流程。
 
 ## 给外部 Agent 的工作约定
 
