@@ -40,7 +40,7 @@ pipeline 必须配置 `profile` step，其输出遵守 [标准化 Profile 协议
 
 ## 阶段和命令
 
-阶段顺序固定为 `preflight`、`build`、`deploy`、`smoke`、`profile`、`benchmark`、`quality`、`api`、`stability`。只有 benchmark 必须存在；真实模式还要求 preflight 和 cleanup。实际合同需要哪些精度、API 和稳定性门禁，应明确列入 steps。
+阶段顺序固定为 `preflight`、`build`、`deploy`、`smoke`、`profile`、`benchmark`、`quality`、`api`、`stability`、`final_accuracy`。benchmark 必须存在；真实模式还要求 preflight、cleanup、final_accuracy 和最终复验。实际合同的质量、API 和稳定性门禁需明确列入 steps。`final_accuracy` 只在最终 trial 运行，三套本地冻结测试集必须齐全并配置硬门禁；详见 [最终精度](final-accuracy.md)。
 
 命令中支持 `{python}`、`{config_dir}`、`{package_dir}`、`{run_dir}`、`{trial_dir}`、`{source_dir}`、`{stage_dir}`。替换后的每个元素仍是一个 argv，不隐式执行 shell。敏感配置通过环境注入，日志默认不记录 argv 或 env；adapter 自身也应避免输出 credentials。
 

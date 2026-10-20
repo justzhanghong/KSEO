@@ -101,6 +101,14 @@
         "{config_dir}/adapters/project_adapter.py"
       ],
       "timeout_seconds": 7200
+    },
+    {
+      "name": "final_accuracy",
+      "command": [
+        "{python}",
+        "{config_dir}/adapters/project_final_accuracy.py"
+      ],
+      "timeout_seconds": 86400
     }
   ],
   "cleanup": {
@@ -205,11 +213,74 @@
         "field": "stability.checks.contract_pass",
         "op": "==",
         "value": true
+      },
+      {
+        "name": "最终三项精度与有效性",
+        "stage": "final_accuracy",
+        "field": "final_accuracy.passed",
+        "op": "==",
+        "value": true
       }
     ],
     "objective": {
       "field": "benchmark.cases.long_c1.ttft_ms.mean",
       "direction": "min"
+    },
+    "final_accuracy": {
+      "suites": [
+        {
+          "id": "rtlbench",
+          "dataset_id": "rtlbench-160",
+          "dataset_sha256": "6c18a1f74c0c4f4d480fae588dbd98ca94b74abf4c506c5b54855d857bebf0df",
+          "expected_samples": 160,
+          "manifest": [],
+          "evaluator_sha256": "<actual-evaluator-sha256>",
+          "extractor_sha256": "<actual-extractor-sha256>",
+          "min_score": null,
+          "max_failed_requests": 0,
+          "generation": {
+            "thinking": "<frozen-thinking-mode>",
+            "first_max_output_tokens": null,
+            "context_limit": null,
+            "retry_policy": "none"
+          }
+        },
+        {
+          "id": "longbench_v2",
+          "dataset_id": "longbench-v2",
+          "dataset_sha256": "6330d1a0bc8b95b70393fea979e9fe9b19660460d9a067b9e2db35c36a7fd5b5",
+          "expected_samples": 525,
+          "manifest": [],
+          "evaluator_sha256": "<actual-evaluator-sha256>",
+          "extractor_sha256": "<actual-extractor-sha256>",
+          "min_score": null,
+          "max_failed_requests": 0,
+          "generation": {
+            "thinking": "<frozen-thinking-mode>",
+            "first_max_output_tokens": null,
+            "context_limit": null,
+            "retry_policy": "none"
+          },
+          "choice_regex": "<freeze-final-content-choice-regex>"
+        },
+        {
+          "id": "livecodebench_v1",
+          "dataset_id": "livecodebench-v1",
+          "dataset_sha256": "201ea799ca93484da54da18a63cd56b71ec215c17f2228b09088e2e5a1613beb",
+          "expected_samples": 400,
+          "manifest": [],
+          "evaluator_sha256": "<actual-evaluator-sha256>",
+          "extractor_sha256": "<actual-extractor-sha256>",
+          "min_score": null,
+          "max_failed_requests": 0,
+          "generation": {
+            "thinking": "<frozen-thinking-mode>",
+            "first_max_output_tokens": null,
+            "context_limit": null,
+            "retry_policy": "none"
+          }
+        }
+      ]
     }
   },
   "optimizer": {

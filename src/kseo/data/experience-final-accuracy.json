@@ -1,0 +1,990 @@
+{
+  "schema_version": 1,
+  "revision": "2026-10-20.2",
+  "nodes": [
+    {
+      "id": "B01",
+      "level": 3,
+      "parent_id": "M11",
+      "title": "全量验收核对内容身份，不能只核对 ID 数量",
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "冻结数据版本、原文件 hash、顺序和 ID，同时核对去掉 ID 后的内容身份；本地快照、官方版本、裁剪子集和重复扩增分别命名；当前任务按用户指定的本地集合验收，不替换或去重。",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "priority": 20,
+      "source_ids": [
+        "accuracy:Q01",
+        "accuracy:Q09",
+        "accuracy:A01"
+      ],
+      "evidence_boundary": {
+        "basis": "CURRENT_OFFLINE_DATA_AUDIT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "CURRENT_OFFLINE_DATA_IDENTITY_AUDIT",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "历史 317/525 只绑定原本地语料与当时合同，不能替代新模型实测或声称官方全量；重复性质作为证据边界披露，不改变本地验收分母。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "case:B01",
+      "level": 4,
+      "parent_id": "B01",
+      "title": "全量验收核对内容身份，不能只核对 ID 数量：案例与证据",
+      "kind": "data_identity_case",
+      "status": "CURRENT_OFFLINE_AUDIT_NOT_GPU_RERUN",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "observations": [
+        "本轮核对历史 LongBenchv2 525 个 ID，但非 ID 内容只有 105 条，每条重复 5 次；源文件 hash b31bf65...。",
+        "用户明确要求按本地测试集验收：当前 LongBenchv2 保留 525 条顺序和分母，不换官方版本，不去重。"
+      ],
+      "source_ids": [
+        "accuracy:Q01",
+        "accuracy:Q09",
+        "accuracy:A01"
+      ],
+      "evidence_boundary": {
+        "basis": "CURRENT_OFFLINE_DATA_AUDIT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "CURRENT_OFFLINE_DATA_IDENTITY_AUDIT",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "历史 317/525 只绑定原本地语料与当时合同，不能替代新模型实测或声称官方全量；重复性质作为证据边界披露，不改变本地验收分母。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "B02",
+      "level": 3,
+      "parent_id": "M11",
+      "title": "最终精度保持最佳优化产物与服务行为一致",
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "最终三项测试使用最终源码、镜像、配置、拓扑及明确的采样/Thinking/上下文协议；需要调整评测协议时冻结新版本并保留可比 baseline。",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "priority": 20,
+      "source_ids": [
+        "accuracy:Q02",
+        "accuracy:Q14"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_CONTRACT_AND_REPORT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "具体 TP/PP、Max、High、预算及阈值均属于原合同，不能自动继承。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "case:B02",
+      "level": 4,
+      "parent_id": "B02",
+      "title": "最终精度保持最佳优化产物与服务行为一致：案例与证据",
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "observations": [
+        "V4.1 历史审阅重新解析 104 个服务启动字段；三个正式数据集统一 Max。",
+        "早期 GLM 合同采用不同输出预算、Thinking 与 >0 的连通性门槛，不能把这些设为新模型默认。"
+      ],
+      "source_ids": [
+        "accuracy:Q02",
+        "accuracy:Q14"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_CONTRACT_AND_REPORT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "具体 TP/PP、Max、High、预算及阈值均属于原合同，不能自动继承。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "B03",
+      "level": 3,
+      "parent_id": "M11",
+      "title": "子进程必须使用冻结评测器，prediction 不能替代原始账本",
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "核对所有 worker 的真实 import 路径、evaluator/提取器 hash，并逐样本绑定完整 prompt、raw attempt 与所计分的 final_content；缺失历史 raw 不补造。",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "priority": 20,
+      "source_ids": [
+        "accuracy:Q08",
+        "accuracy:Q02"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_INCIDENT_REPORT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "本轮未重演该故障；缺失 raw 不能由后续正常 run 或 summary 事后重建。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "case:B03",
+      "level": 4,
+      "parent_id": "B03",
+      "title": "子进程必须使用冻结评测器，prediction 不能替代原始账本：案例与证据",
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "observations": [
+        "LongBench worker 执行绝对脚本路径后导入已安装 OpenCompass，绕过隔离副本及 raw hooks。",
+        "该作废 run 留下两条非空 prediction 但无 raw ledger，未并入后续正式 525 条。"
+      ],
+      "source_ids": [
+        "accuracy:Q08",
+        "accuracy:Q02"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_INCIDENT_REPORT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "本轮未重演该故障；缺失 raw 不能由后续正常 run 或 summary 事后重建。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "B04",
+      "level": 3,
+      "parent_id": "M02",
+      "title": "RTLBench 编译/仿真显式 fail-closed",
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "同时核对编译退出码、仿真退出码、成功/失败标记及逐测试终态；没有异常文本或进程退出 0 不能单独判通过。",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "priority": 20,
+      "source_ids": [
+        "accuracy:Q03",
+        "accuracy:Q15"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_REVIEW",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "这些是原 harness 的缺陷，不意味着所有测试失败都是模型错误。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "case:B04",
+      "level": 4,
+      "parent_id": "B04",
+      "title": "RTLBench 编译/仿真显式 fail-closed：案例与证据",
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "observations": [
+        "历史 61 分因解析和 fail-open 误判而撤销；原通过集合中还识别出 4 个假通过。",
+        "仿真内部 Simulation timeout 与外层进程超时是两种不同证据。"
+      ],
+      "source_ids": [
+        "accuracy:Q03",
+        "accuracy:Q15"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_REVIEW",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "这些是原 harness 的缺陷，不意味着所有测试失败都是模型错误。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "B05",
+      "level": 3,
+      "parent_id": "M12",
+      "title": "RTLBench 冻结原 testbench，基准争议不能靠自建 oracle 消除",
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "模型回答、提取产物、原 testbench、执行环境和规则逐项 hash 绑定；发现矛盾时记录归因和有效性缺口，不自行补期望输出、删题或以目标分数调规则。",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "priority": 20,
+      "source_ids": [
+        "accuracy:Q03",
+        "accuracy:Q02"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_REVIEW_WITH_EXPLICIT_ACCEPTANCE_BOUNDARY",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "旧任务对精确版本的用户接受不授权新任务修改 TB，也不认证旧基准所有语义。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "case:B05",
+      "level": 4,
+      "parent_id": "B05",
+      "title": "RTLBench 冻结原 testbench，基准争议不能靠自建 oracle 消除：案例与证据",
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "observations": [
+        "历史自行新建 oracle 的 148/149 分撤销；原 TB 对照为 67/160。",
+        "用户后来只对已有指定 73/160 版本作单项接受，10 处历史 TB 变更和争议仍保留。"
+      ],
+      "source_ids": [
+        "accuracy:Q03",
+        "accuracy:Q02"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_REVIEW_WITH_EXPLICIT_ACCEPTANCE_BOUNDARY",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "旧任务对精确版本的用户接受不授权新任务修改 TB，也不认证旧基准所有语义。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "B06",
+      "level": 3,
+      "parent_id": "M02",
+      "title": "RTL 提取按目标模块完整边界，不从首个 endmodule 截断",
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "冻结确定性的目标模块提取规则，处理前缀、重复目标与辅助模块依赖；保留原正文、提取前后 diff 和全体样本，不能按仿真输赢挑选提取版本。",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "priority": 20,
+      "source_ids": [
+        "accuracy:Q02",
+        "accuracy:Q04"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_EXTRACTION_AUDIT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "特定旧提取器规则不是适用于所有语言/模块结构的通用 parser；本轮未重新编译。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "case:B06",
+      "level": 4,
+      "parent_id": "B06",
+      "title": "RTL 提取按目标模块完整边界，不从首个 endmodule 截断：案例与证据",
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "observations": [
+        "原 TB 技术对照保留 160 条完整正文与提取差异；22 处提取变化中包括普通/重复目标的前缀处理。"
+      ],
+      "source_ids": [
+        "accuracy:Q02",
+        "accuracy:Q04"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_EXTRACTION_AUDIT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "特定旧提取器规则不是适用于所有语言/模块结构的通用 parser；本轮未重新编译。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "B07",
+      "level": 3,
+      "parent_id": "M02",
+      "title": "LiveCodeBench 统一提取最终代码并全量离线重评",
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "只按预先冻结、确定性的 code-generation 规则处理 final_content；修 parser 后在相同完整数据和原测试上统一重评，不只替换失败题，不改正文或测试。",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "priority": 20,
+      "source_ids": [
+        "accuracy:Q06",
+        "accuracy:Q04"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_FULL_RESCORING_REPORT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "“最后代码块”是当时版本规则，不能按样本输赢选择 first/last/longest；单题诊断不等于全量成绩。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "case:B07",
+      "level": 4,
+      "parent_id": "B07",
+      "title": "LiveCodeBench 统一提取最终代码并全量离线重评：案例与证据",
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "observations": [
+        "旧 test-output 提取器拿到首个 74 字符草稿，漏掉末尾完整程序。",
+        "统一 v2 对全部 400 题重评，380→382；后续 I/O 修复到 383，历史版本分别保留。"
+      ],
+      "source_ids": [
+        "accuracy:Q06",
+        "accuracy:Q04"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_FULL_RESCORING_REPORT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "“最后代码块”是当时版本规则，不能按样本输赢选择 first/last/longest；单题诊断不等于全量成绩。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "B08",
+      "level": 3,
+      "parent_id": "M02",
+      "title": "LiveCodeBench 文本/二进制 I/O 共用状态，错误哨兵不能按真值计分",
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "预检 input/print、stdin.buffer/stdout.buffer、混合读写共享游标；-1/-2 均为错误状态，禁止 all([-1,-2]) 一类 fail-open。",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "priority": 20,
+      "source_ids": [
+        "accuracy:Q05",
+        "accuracy:Q04"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_PREFLIGHT_AND_RESCORING_REPORT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "兼容层不得改题意、输入、expected output 或测试规则；预检 PASS 不是模型精度 PASS。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "case:B08",
+      "level": 4,
+      "parent_id": "B08",
+      "title": "LiveCodeBench 文本/二进制 I/O 共用状态，错误哨兵不能按真值计分：案例与证据",
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "observations": [
+        "旧 StringIO 无 .buffer，导致合法模型代码在评测器内失败；共享 BytesIO 兼容层四条路径通过。",
+        "历史最终 400 题仅一题因 I/O 别名兼容恢复，其他 399 状态不变。"
+      ],
+      "source_ids": [
+        "accuracy:Q05",
+        "accuracy:Q04"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_PREFLIGHT_AND_RESCORING_REPORT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "兼容层不得改题意、输入、expected output 或测试规则；预检 PASS 不是模型精度 PASS。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "B09",
+      "level": 3,
+      "parent_id": "M01",
+      "title": "LiveCodeBench 仅加载冻结 release，不引入无关版本依赖",
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "固定 release_v1 的 400 题及原顺序/测试 payload；加载器按版本先选择文件，再下载，不能漂移至 v2..v6。",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "priority": 20,
+      "source_ids": [
+        "accuracy:Q07"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_LOADER_INCIDENT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "该结论仅描述旧加载器；加载失败不是模型精度或 release_v1 不可用的结论。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "case:B09",
+      "level": 4,
+      "parent_id": "B09",
+      "title": "LiveCodeBench 仅加载冻结 release，不引入无关版本依赖：案例与证据",
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "observations": [
+        "官方旧 loader 先下载所有版本再过滤，因缺 test2.jsonl 导致 v1 任务启动失败。",
+        "修复只收紧下载列表，题目、公开/私有测试和评分未改。"
+      ],
+      "source_ids": [
+        "accuracy:Q07"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_LOADER_INCIDENT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "该结论仅描述旧加载器；加载失败不是模型精度或 release_v1 不可用的结论。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "B10",
+      "level": 3,
+      "parent_id": "M02",
+      "title": "LongBenchv2 只从最终正文提取 A-D，非空无选项按错计分",
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "冻结答案 parser，只读取 final_content；显式区分无有效选项、不可解析、传输失败，全部留在总分母，不因非空无选项重采样。",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "priority": 20,
+      "source_ids": [
+        "accuracy:Q09",
+        "accuracy:A01"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_SCORING_WITH_CURRENT_SCOPE_CORRECTION",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "不得从 reasoning 中挑选对的选项；原 51.43% 线不是当前默认门槛。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "case:B10",
+      "level": 4,
+      "parent_id": "B10",
+      "title": "LongBenchv2 只从最终正文提取 A-D，非空无选项按错计分：案例与证据",
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "observations": [
+        "历史正文 None of the above 不包含 A-D，被确定性计错而非伪报 parser error。",
+        "317/525 的独立计分只证明该原本地语料的计分一致；当前仍按用户指定的本地 525 条验收，披露内容重复，不称官方全量。"
+      ],
+      "source_ids": [
+        "accuracy:Q09",
+        "accuracy:A01"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_SCORING_WITH_CURRENT_SCOPE_CORRECTION",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "不得从 reasoning 中挑选对的选项；原 51.43% 线不是当前默认门槛。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "B11",
+      "level": 3,
+      "parent_id": "M02",
+      "title": "Thinking、输出预算和重试规则在生成前冻结",
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "每套正式数据统一模型行为与预算策略，逐 attempt 留痕；仅允许合同事先授权的重试条件，非空正常回答不因低分重采样，失败和空正文保留分母。",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "priority": 20,
+      "source_ids": [
+        "accuracy:Q10",
+        "accuracy:Q13"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_CONTRACTS_WITH_VERSION_BOUNDARY",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "上述具体预算和两次请求只作为历史实例；新任务必须自己声明并冻结。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "case:B11",
+      "level": 4,
+      "parent_id": "B11",
+      "title": "Thinking、输出预算和重试规则在生成前冻结：案例与证据",
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "observations": [
+        "V4.1 原合同首轮 131072；仅空正文且 length 时再用 context_limit-prompt_tokens 请求一次，不允许第三次。",
+        "旧 GLM 多轮增大预算后拼接结果另有历史合同，不能迁移为当前按错题重采样的默认。"
+      ],
+      "source_ids": [
+        "accuracy:Q10",
+        "accuracy:Q13"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_CONTRACTS_WITH_VERSION_BOUNDARY",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "上述具体预算和两次请求只作为历史实例；新任务必须自己声明并冻结。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "B12",
+      "level": 3,
+      "parent_id": "M12",
+      "title": "编译器、glibc、上下文和工具失败先归类为环境/协议问题",
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "对齐编译器、仿真器、Python/依赖及容器身份，保留工具错误；上下文资源不足不能静默换配置或删长题后继续同一正式验收。",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "priority": 20,
+      "source_ids": [
+        "accuracy:Q11",
+        "accuracy:Q12"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_ENVIRONMENT_REPORT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "不是说所有 0 分都属于环境问题；每次归因需实际错误和原样本证据。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "case:B12",
+      "level": 4,
+      "parent_id": "B12",
+      "title": "编译器、glibc、上下文和工具失败先归类为环境/协议问题：案例与证据",
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "observations": [
+        "宿主机 glibc 不兼容造成 RTL 重评 0 分，仅属无效环境诊断。",
+        "GLM 某部署请求上下文 503232 时，KV 初始化估计仅支持 153152，发生回退；这是改变配置的边界。"
+      ],
+      "source_ids": [
+        "accuracy:Q11",
+        "accuracy:Q12"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_ENVIRONMENT_REPORT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "不是说所有 0 分都属于环境问题；每次归因需实际错误和原样本证据。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "B13",
+      "level": 3,
+      "parent_id": "M11",
+      "title": "数值达线、基准有效性与完整交付分别判定",
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "将所选 run、数据、代码、提取器、测试、逐题结果和明确用户决定绑定；单项分数/联合均分达线不能覆盖 raw、材料来源和运行记录缺口。",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "priority": 20,
+      "source_ids": [
+        "accuracy:Q02",
+        "accuracy:Q03",
+        "accuracy:Q14"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_ACCEPTANCE_AUDIT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "单次历史用户接受只对精确产物和合同生效，不是通用豁免。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "case:B13",
+      "level": 4,
+      "parent_id": "B13",
+      "title": "数值达线、基准有效性与完整交付分别判定：案例与证据",
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "applies_to": {},
+      "requires_capabilities": [
+        "final_accuracy"
+      ],
+      "observations": [
+        "V4.1 三项指定分数及联合均分被接受，但整体报告仍 NOT_ACCEPTED，因为历史 raw 和来源时间缺口。",
+        "旧早期 >0 的连通性门槛不能迁移成最终模型质量门槛。"
+      ],
+      "source_ids": [
+        "accuracy:Q02",
+        "accuracy:Q03",
+        "accuracy:Q14"
+      ],
+      "evidence_boundary": {
+        "basis": "HISTORICAL_ACCEPTANCE_AUDIT",
+        "claim_scope": "最终精度评测的条件性工作规则；数值、版本和历史决定只属于所引记录。",
+        "causal_status": "HISTORICAL_REPORT_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "单次历史用户接受只对精确产物和合同生效，不是通用豁免。",
+          "本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。"
+        ]
+      }
+    },
+    {
+      "id": "G-P02",
+      "level": 3,
+      "parent_id": "M11",
+      "title": "优化完成后进行 RTLBench、LongBenchv2、LiveCodeBench 最终精度验收",
+      "kind": "current_policy",
+      "status": "CURRENT_USER_POLICY",
+      "summary": "三项完整精度与证据有效性通过后才能完成真实优化交付。",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "source_ids": [
+        "policy:U02",
+        "policy:U03"
+      ],
+      "policy": {
+        "title": "优化完成后进行 RTLBench、LongBenchv2、LiveCodeBench 最终精度验收",
+        "required_benchmarks": [
+          "rtlbench",
+          "longbench_v2",
+          "livecodebench_v1"
+        ],
+        "historical_repeated_longbench_525_is_official_full": false,
+        "procedure": [
+          "System 完成速度优化和最佳产物复验后，以同一最终产物依次执行 RTLBench、LongBenchv2、LiveCodeBench 全量精度；不能用 GSM8K 替代。",
+          "先冻结数据版本、完整样本/内容身份、prompt、Thinking、预算、重试、parser、evaluator 和数值门槛，缺失时保持未验收。",
+          "真实 measured 合同必须配置 final_accuracy；三个数据集均从 raw attempt 与逐样本结果独立重算，并检查有效性审阅。",
+          "当前数据入口以本地冻结集合为准：RTLBench 160、LongBenchv2 525、LCB release_v1 400；LongBench 的 525 条对应 105 条内容各重复 5 次，保留原顺序和 525 分母，不能换官方版本或自行去重。",
+          "遵守 B01-B13 的失败分类、冻结 oracle、统一重评和来源边界；旧任务预算、得分和用户接受不自动迁移。"
+        ],
+        "enforcement": {
+          "implemented": "final_accuracy 合同/最终阶段/独立重算与证据绑定",
+          "requires_adapter": [
+            "真实模型请求与完整 raw",
+            "RTL 编译/仿真及 LCB 隔离执行",
+            "独立有效性审阅"
+          ],
+          "real_gpu_evaluations_run_here": 0
+        }
+      },
+      "evidence_boundary": {
+        "basis": "CURRENT_USER_POLICY",
+        "claim_scope": "全模型真实优化后的最终精度验收；具体版本和门槛须当前合同固定。",
+        "causal_status": "NORMATIVE_NOT_EMPIRICAL",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "规则和接口已建立不代表三项真实模型测试已经运行；本轮未启动模型或占用 GPU。"
+        ]
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "accuracy:Q01",
+      "relative_path": "vllm_d/flash41_speed_up_v1_acc_1st/reports/dataset_integrity.md",
+      "sha256": "9189ce83572965e734f7646aa779d2a045b99e2ec202f8cb4f7bf1650490940d",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q02",
+      "relative_path": "vllm_d/flash41_speed_up_v1_acc_1st/reports/requirements_audit.md",
+      "sha256": "869505bd6ac2fe7b7d1716d02b29d03873ded87d85c630e0dac128782c5f1e16",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q03",
+      "relative_path": "vllm_d/flash41_speed_up_v1_acc_1st/reports/rtlbench_score_version_policy.md",
+      "sha256": "f1bc3eae853e2237b584f8b5cd8d0edba0094e7eb6dac0917bd2f4da3874cb5b",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q04",
+      "relative_path": "vllm_d/flash41_speed_up_v1_acc_1st/reports/reuse_guide_zh.md",
+      "sha256": "64c05ed88bac1774ce21c32aaae710e221a1f13ee4548dc11d08fb829ecc0ed2",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q05",
+      "relative_path": "vllm_d/flash41_speed_up_v1_acc_1st/reports/lcb_io_compat_preflight.md",
+      "sha256": "a161aec372d0d74df27fb5ce5e28373297e5ec5b278984cd27838be6665f279c",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q06",
+      "relative_path": "vllm_d/flash41_speed_up_v1_acc_1st/reports/incidents/lcb_final_code_extraction_20260914.md",
+      "sha256": "960bff27bcebac658ceb484e913f3d49711eacaa512158af6f99a9d931fe09bf",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q07",
+      "relative_path": "vllm_d/flash41_speed_up_v1_acc_1st/reports/incidents/lcb_release_v1_loader_20260914.md",
+      "sha256": "8bbeb6f7862ac15c1eb0b35bc6a95f30f4b47a1beeaa0d0a22ec0b6cbe665ac9",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q08",
+      "relative_path": "vllm_d/flash41_speed_up_v1_acc_1st/reports/incidents/longbench_20260914_worker_import_bypass.md",
+      "sha256": "4c15e72b0fa2db3397c0b06ea50c345e46cb1379550160b52067848a12c2be97",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q09",
+      "relative_path": "vllm_d/flash41_speed_up_v1_acc_1st/reports/acceptance/LongBenchv2_full_acceptance.md",
+      "sha256": "0c9e13245aa9d07c90f751de6268d1e7eb98d707f025836689d8195e11068d87",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q10",
+      "relative_path": "vllm_d/flash41_speed_up_v1_acc_1st/reports/max_tokens_audit.md",
+      "sha256": "176f316c65ff516197a8d674ad4d471e11b39469b747dbad9833681a8d0bee2e",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q11",
+      "relative_path": "vllm_d/flash41_speed_up_v1_acc_1st/reports/incidents/rtlbench_counter_width_host_glibc_20260914.md",
+      "sha256": "fa386d91d49b47c871a3701a34774c46fd9d8b26d779f7a430450abf18b2ef23",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q12",
+      "relative_path": "vllm_a/glm52_speed_up_v1_stable/reports/analysis/task1_lcb_503232_context_fallback_20260622_041000.json",
+      "sha256": "dc131793d0651ab302ed4f65f679c671f3d8acd64083358adf85e6bd6d833c9b",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q13",
+      "relative_path": "vllm_a/glm52_speed_up_v1_stable/reports/acceptance/LiveCodeBench_LiveCodeBench_merged_1p1d_v1_thinking_true_rerun176_out131072_seq202752_20260621_203613_postprocess_acceptance.md",
+      "sha256": "838ce29c9fd8b875b50f3e4cda1280d7606050897626fd9c3ac0f7a2f77ddb79",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q14",
+      "relative_path": "vllm_a/fp8_speed_up_v2_task_acc_v1/reports/contracts/RTLBench_contract.md",
+      "sha256": "127736d9bd235ef17d5569c3b53a2f1252146579c6f54cdae57ded4236109d28",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:Q15",
+      "relative_path": "vllm_d/flash41_speed_up_v1_acc_1st/reports/qa_progress_20260914.md",
+      "sha256": "752fda1fb071d6c40e35cc1f106a4011da8b4e13c7baaf3f0ba9ac466979ca56",
+      "line": 1,
+      "anchor": "报告标题及下文相应完整章节",
+      "type": "historical_report_or_contract",
+      "review": "阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "accuracy:A01",
+      "relative_path": "KSEO/src/kseo/data/datasets/longbench-historical-audit/audit.json",
+      "sha256": "0dfb18f1b978b73a41b838003cd01a8bdd8a684e0060646bc4f64b1458a5994d",
+      "line": 1,
+      "anchor": "unique_non_id_records 与 multiplicity_histogram",
+      "type": "current_offline_data_identity_audit",
+      "review": "本轮对原 JSON 去掉 _id 后按完整内容核对：525 个 ID、105 条独立内容，每条重复 5 次；非模型重测。",
+      "raw_in_repository": true
+    },
+    {
+      "id": "policy:U02",
+      "type": "current_user_instruction",
+      "statements": [
+        "最后优化完之后，进行RTLBench、LongBench、LiveCodeBench精度测试"
+      ],
+      "sha256": "e149c824d8c21c43d806965440a2306dc24d7ce47a244b52b0056ea7eb0b0c17",
+      "review": "保留本轮用户指令的规范语句，不复制内部路径；hash 按 statements 以换行连接的 UTF-8 字符串计算，不是完整消息或性能结果的 hash。"
+    },
+    {
+      "id": "policy:U03",
+      "type": "current_user_instruction",
+      "statements": [
+        "测试集按本地的算，不要用官方的。"
+      ],
+      "sha256": "84d61ce28f3155a791f12f91ba86bc9b4e7cfd5be4531f1acb0d979fdcd82ea0",
+      "review": "当前用户指定本地冻结测试集优先；不替换官方版本，不按重复内容擅自去重或改分母。"
+    }
+  ]
+}

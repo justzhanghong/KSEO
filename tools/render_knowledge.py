@@ -32,6 +32,7 @@ def evidence_links(node: dict) -> str:
 def render() -> None:
     data = load_hierarchy()
     nodes = data["nodes"]
+    counts = {level: sum(node["level"] == level for node in nodes) for level in range(1, 5)}
     index = {node["id"]: node for node in nodes}
     children: dict = {}
     for node in nodes:
@@ -40,12 +41,13 @@ def render() -> None:
            "先从原则选择方法，再按当前能力筛选场景规则，最后下钻到历史案例和来源。目录关系用于导航，不把案例归类解释为对父节点全部表述的因果证明。", "",
            "![由粗到细的知识层级](knowledge-layers.svg)", "",
            "| 层级 | 内容 | 数量 | 证据边界 |", "| --- | --- | --- | --- |",
-           "| L1 | 优化原则 | 6 | 跨案例概括，不构成任意模型上的收益证明 |",
-           "| L2 | 诊断与优化方法 | 12 | 决定检查和实验步骤，尚需实际工具与证据 |",
-           "| L3 | 带条件的场景规则 | 36 | 1 条全模型数学等价规则、11 条 V4.1 现行规则、20 条跨模型迁移规则、4 条原有经验归纳 |",
-           "| L4 | 历史案例与来源 | 46 | 20 个新整理案例、26 个原有案例；保留历史状态与缺口 |", "",
-           "关联 54 条来源记录：本批 23 条历史来源、已有 V4.1 包的 27 条历史来源，以及 4 条用户原文。来源记录数不等于独立复现次数。原有 9 张代表性摘要卡未保存逐卡直接来源 hash，明确保留此缺口，不补造引用。", "",
+           f"| L1 | 优化原则 | {counts[1]} | 跨案例概括，不构成任意模型上的收益证明 |",
+           f"| L2 | 诊断与优化方法 | {counts[2]} | 决定检查和实验步骤，尚需实际工具与证据 |",
+           f"| L3 | 带条件的场景规则 | {counts[3]} | 全模型数学等价/最终精度规则、V4.1 现行规则、跨模型与评测迁移规则 |",
+           f"| L4 | 历史案例与来源 | {counts[4]} | 历史观察与本轮离线数据审计分别记录；均不代表本轮 GPU 实测 |", "",
+           f"关联 {len(data['sources'])} 条来源记录，包括历史材料、用户规范和本轮静态数据身份审计。来源记录数不等于独立复现次数。原有 9 张代表性摘要卡未保存逐卡直接来源 hash，明确保留此缺口，不补造引用。", "",
            "**通用前提 G-P01：速度优化必须数学等价。** 允许的差异限于浮点表示、舍入、等价运算重排或并行归约带来的微小误差，并满足搜索前冻结的容差。数学等价不要求 bitwise 一致；数值接近或质量分数通过也不能单独证明数学等价。该规则对所有模型和优化路径生效，不受 top-k 限制。", "",
+           "**最终精度 G-P02：优化完成后验收 RTLBench、LongBenchv2、LiveCodeBench。** 三项全量与证据有效性均须通过。详见 [最终精度合同与踩坑](final-accuracy.md)。数据按本地冻结集合：RTLBench 160、LongBenchv2 525、LiveCodeBench 400；LongBench 保留 105 条内容各重复 5 次的原顺序和 525 分母，不换官方版本、不去重。", "",
            "## 组织与证据边界", "",
            "本批材料抽查 GLM-5.1 NVFP4/FP8、GLM-5.2、V4-Flash 和 V4.1-Flash 的报告、故障分析及部分原始日志。整理前核对新增 23 份原文件的 SHA256；没有逐行审计全部历史日志，没有重跑 GPU，也没有新增真实单机或 P/D 部署 adapter。用户授权整理不提升原证据等级。", "",
            "| 证据类型 | 可以支持 | 不能直接支持 |", "| --- | --- | --- | --- |",
@@ -62,7 +64,7 @@ def render() -> None:
            "# 按模型和明确能力筛选；同时返回祖先、匹配案例和来源", "kseo knowledge --hierarchy --context examples/knowledge/glm52-pd-context.json --limit 24", "```", "",
            "`--tree`/`--node` 是完整导航，不隐含条件已满足；不能同时传 `--context`。`--hierarchy` 才筛选条件，缺少能力或硬件字段不假定匹配。示例 context 只演示筛选，不证明该部署已经支持相应能力。", "",
            "旧 `knowledge --context ...` 继续返回原有平面卡片；新分层接口覆盖本次跨模型规则。`--extra` 只用于旧接口，未审阅导入不会自动进入层级。", "",
-           "外部 Agent 的 `knowledge_hierarchy` 始终带 6 条原则、全模型 G-P01 及所选方法、规则、匹配案例、祖先 ID 和来源。`--limit`/top-k 只截断迁移规则；匹配 V4.1 时，11 条模型现行规则完整保留，`model_recipe` 仍完整提供。当前合同和用户规则优先，旧参数、learned-experience 和历史案例不得覆盖；未知阈值仍待确认，不能自动 PASS。", "",
+           "外部 Agent 的 `knowledge_hierarchy` 始终带 6 条原则、全模型 G-P01/G-P02 及所选方法、规则、匹配案例、祖先 ID 和来源。`--limit`/top-k 只截断迁移规则；匹配 V4.1 时，11 条模型现行规则完整保留，`model_recipe` 仍完整提供。当前合同和用户规则优先，旧参数、learned-experience 和历史案例不得覆盖；未知阈值仍待确认，不能自动 PASS。", "",
            "## 原则 → 方法 → 规则", ""]
     for principle in children[None]:
         doc += [f"<a id=\"{principle['id'].lower()}\"></a>", f"### {principle['id']} {principle['title']}", "", principle["summary"], ""]
@@ -77,14 +79,13 @@ def render() -> None:
                 "上层方法：" + link(index[rule["parent_id"]]) + "。", "",
                 "适用条件：" + conditions(rule) + "。", ""]
         if rule["kind"] == "current_policy":
-            if rule["id"] == "G-P01":
-                doc += ["类别：**全模型通用的当前用户规则**。不要求浮点 bitwise 一致，不提供全局默认 atol/rtol，不包含自动数学证明器。", ""]
+            if rule["id"].startswith("G-P"):
+                doc += ["类别：**全模型通用的当前用户规则**。规则不是已经执行的真实模型验收证据。", ""]
             else:
                 doc += ["类别：**当前用户规则**；具体操作、待确认参数和 adapter 要求以 `kseo recipe deepseek-v4.1-flash` 为准。", ""]
             doc += ["- " + step for step in rule["policy"].get("procedure", rule.get("recommended_actions", []))]
-            if rule["id"] == "G-P01":
-                doc += ["", "所需证据：" + "；".join(rule["policy"]["required_evidence"]) + "。", "",
-                        "完整规则：`kseo knowledge --node G-P01`。不重新启用已退役的输出文本相似度门禁；数学依据、独立数值 oracle 和当前质量门禁分别检查。", ""]
+            if rule["id"].startswith("G-P"):
+                doc += ["", "完整规则：`kseo knowledge --node " + rule["id"] + "`；各项具体证据及实现边界见 policy。当前规则不重新启用已退役的输出文本相似度门禁。", ""]
             else:
                 doc += ["", "完整解释：[V4.1-Flash 专项经验](models/deepseek-v4.1-flash.md)。", ""]
         else:
@@ -98,7 +99,7 @@ def render() -> None:
     doc += [f"| `{key}` | {value} |" for key, value in data["capability_vocabulary"].items()]
     doc += ["", "案例筛选只判断索引已声明的模型/硬件/能力字段。本批新案例未完整结构化原 GPU、backend commit、拓扑与全部负载，因此同模型案例被返回只表示相关，完整迁移资格仍须通过 M01 能力与身份核对。", "",
             "## 数据与维护", "",
-            "主体是 `src/kseo/data/knowledge-hierarchy.json`；现有规则/卡片通过 `legacy_links` 引用原始 recipe，运行时读取原文，不维护覆盖原规则的副本。层级加载会检查 ID、连续父子层级、引用闭合和证据边界；来源用 `cross:`/`v41:` 命名空间避免同名 ID 冲突。", "",
+            "主体是 `src/kseo/data/knowledge-hierarchy.json`，最终精度经验位于 `experience-final-accuracy.json`；现有规则/卡片通过 `legacy_links` 引用原始 recipe。层级加载检查 ID、连续层级、引用闭合与证据边界；来源使用 `cross:`/`v41:`/`accuracy:` 命名空间。", "",
             "公开来源只保留相对实验路径或文件名、行号（本批来源）、SHA256 和审阅范围。原文件未随仓库公开，无法只靠 hash 在公开环境复算历史结果。证据不足项必须补齐后另建结论，不能回写历史失败为通过。", "",
             "```bash", "# 改动数据后重建本手册、案例页和层级图", "PYTHONPATH=src python3 tools/render_knowledge.py", "```", "",
             "[完整案例与来源索引](knowledge-cases.md) · [经验转换](conversion.md) · [Agent 接口](agent-workflow.md)", ""]
@@ -131,8 +132,8 @@ def render() -> None:
 
     labels = [("L1 · 优化原则", "6 条原则：数学等价与合同、最大瓶颈点、真实负载、状态一致性、服务能力、证据边界"),
               ("L2 · 诊断与优化方法", "12 个方法：明确检查步骤、工具输入与所需证据"),
-              ("L3 · 带条件的场景规则", "36 条规则：数学等价为全模型前提；模型 / 硬件 / 能力规则按条件匹配"),
-              ("L4 · 历史案例与来源", "46 个案例 · 54 条来源记录：保留观察、原状态、SHA256 与未闭环项")]
+              ("L3 · 带条件的场景规则", f"{counts[3]} 条规则：数学等价与最终精度为前提；其他规则按模型 / 能力匹配"),
+              ("L4 · 历史案例与来源", f"{counts[4]} 个案例 · {len(data['sources'])} 条来源记录：保留观察、原状态、SHA256 与未闭环项")]
     svg = ['<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="670" viewBox="0 0 1080 670" role="img" aria-labelledby="title desc">',
            '<title id="title">KSEO 由粗到细的分层知识</title>',
            '<desc id="desc">四层自上而下，每层只连接相邻下一层，无交叉线。目录导航关系不等于因果证明。</desc>',

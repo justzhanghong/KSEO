@@ -124,12 +124,17 @@ def ingest_stage(path: Path, identity: dict, mode: str, stage: str, policy: dict
         result["profile"] = normalize(payload["profile"])
     if stage == "quality" and ("samples_file" in payload or policy.get("quality_samples") is not None):
         result.update(quality(payload, path.parent, policy))
+    if stage == "final_accuracy":
+        from .final_accuracy import evaluate
+        result.update(evaluate(payload, path.parent, policy["final_accuracy"]))
     return result
 
 
-def gates(results: dict, policy: dict, stage: str | None = None) -> list[dict]:
+def gates(results: dict, policy: dict, stage: str | None = None, *, phase: str | None = None) -> list[dict]:
     decisions = []
     for gate in policy["gates"]:
+        if phase in ("baseline", "candidate") and gate["stage"] == "final_accuracy":
+            continue
         if stage is not None and gate["stage"] != stage:
             continue
         try:

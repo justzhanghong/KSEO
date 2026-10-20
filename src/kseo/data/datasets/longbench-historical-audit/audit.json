@@ -1,0 +1,12 @@
+{
+  "source_sha256": "b31bf65bdd0215568c888c192599b610b8316b2aadd3a0219d194c6480991b93",
+  "rows": 525,
+  "unique_ids": 525,
+  "unique_non_id_records": 105,
+  "multiplicity_histogram": {
+    "5": 105
+  },
+  "scoring_denominator": 525,
+  "selection_authority": "CURRENT_USER_EXPLICIT_LOCAL_DATASET_INSTRUCTION",
+  "conclusion": "保留本地原样 525 条及原分母；披露内容重复，不替换官方版本，不自行去重。"
+}

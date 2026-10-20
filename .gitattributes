@@ -1,0 +1,4 @@
+# 本地冻结数据保持原始字节，避免 Windows checkout 的换行转换。
+src/kseo/data/datasets/** -text
+# 保留来源 README 原有空格，数据 hash 负责检出内容变化。
+src/kseo/data/datasets/livecodebench-v1/LOCAL_README.md whitespace=-blank-at-eol

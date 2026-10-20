@@ -55,6 +55,10 @@ def parser() -> argparse.ArgumentParser:
     recipe = sub.add_parser("recipe", help="查看模型经验及现行测量规则；不是部署 adapter")
     recipe.add_argument("name", nargs="?", help="例如 deepseek-v4.1-flash；省略时列出已有经验包")
     recipe.add_argument("--out", type=Path, help="导出 JSON，不覆盖已有文件")
+    dataset = sub.add_parser("dataset", help="列出、校验或导出固定版本数据；不运行模型")
+    dataset.add_argument("name", nargs="?", help="省略时列出数据清单")
+    dataset.add_argument("--root", type=Path, help="校验外部或已导出的数据目录")
+    dataset.add_argument("--out", type=Path, help="导出到新目录，拒绝覆盖")
     ingest = sub.add_parser("ingest", help="将明确列出的历史材料导入为待审经验")
     ingest.add_argument("paths", nargs="+", type=Path)
     ingest.add_argument("--out", required=True, type=Path)
@@ -70,6 +74,8 @@ def audit(task_path: Path, directory: Path) -> dict:
     identity = read_json(directory / "identity.json")
     if identity.get("contract_sha256") != digest(config):
         raise KSEOError("任务合同与实验 identity 不符")
+    if config["validation"].get("final_accuracy") and identity.get("phase") != record.get("phase"):
+        raise KSEOError("实验 phase 与 identity 不符，不能跳过最终精度门禁")
     from .source import assert_unchanged
     assert_unchanged(directory / "source", identity["source_revision"])
     if record.get("kernel_evidence"):
@@ -89,7 +95,7 @@ def audit(task_path: Path, directory: Path) -> dict:
         path = directory / "steps" / name / "result.json"
         if path.exists():
             results[name] = validation.ingest_stage(path, identity, config["mode"], name, config["validation"])
-    decisions = validation.gates(results, config["validation"])
+    decisions = validation.gates(results, config["validation"], phase=record["phase"])
     return {"trial": record["id"], "pass": all(gate["pass"] for gate in decisions), "gates": decisions}
 
 
@@ -156,6 +162,19 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "ingest":
             count = import_materials(args.paths, args.out)
             print(f"已导入 {count} 条待审经验：{args.out}；补齐适用条件并审查后才能进入自动检索。")
+        elif args.command == "dataset":
+            from . import datasets
+            if (args.out or args.root) and not args.name:
+                raise KSEOError("操作数据必须指定 name")
+            if args.out and args.root:
+                raise KSEOError("--out 与 --root 不能同时使用")
+            if not args.name:
+                value = datasets.catalog()
+            elif args.out:
+                value = datasets.export(args.name, args.out)
+            else:
+                value = datasets.verify(args.name, args.root)
+            print(json.dumps(value, ensure_ascii=False, indent=2))
         elif args.command == "init":
             if args.out.exists():
                 raise KSEOError("输出文件已存在，拒绝覆盖")

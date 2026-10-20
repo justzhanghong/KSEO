@@ -583,6 +583,278 @@
 
 来源：[v41:S27](knowledge-cases.md#source-v41-s27)。
 
+<a id="case-b01"></a>
+## case:B01 全量验收核对内容身份，不能只核对 ID 数量：案例与证据
+
+归类规则：[B01](knowledge.md#b01)。归类关系不扩大案例结论。
+
+原状态：`CURRENT_OFFLINE_AUDIT_NOT_GPU_RERUN`；适用条件：final_accuracy。
+
+观察事实：
+
+- 本轮核对历史 LongBenchv2 525 个 ID，但非 ID 内容只有 105 条，每条重复 5 次；源文件 hash b31bf65...。
+- 用户明确要求按本地测试集验收：当前 LongBenchv2 保留 525 条顺序和分母，不换官方版本，不去重。
+
+证据基础：CURRENT_OFFLINE_DATA_AUDIT；因果状态：`CURRENT_OFFLINE_DATA_IDENTITY_AUDIT`。
+
+证据边界：
+
+- 历史 317/525 只绑定原本地语料与当时合同，不能替代新模型实测或声称官方全量；重复性质作为证据边界披露，不改变本地验收分母。
+- 本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+来源：[accuracy:Q01](knowledge-cases.md#source-accuracy-q01)、[accuracy:Q09](knowledge-cases.md#source-accuracy-q09)、[accuracy:A01](knowledge-cases.md#source-accuracy-a01)。
+
+<a id="case-b02"></a>
+## case:B02 最终精度保持最佳优化产物与服务行为一致：案例与证据
+
+归类规则：[B02](knowledge.md#b02)。归类关系不扩大案例结论。
+
+原状态：`HISTORICAL_CASE_NOT_RERUN`；适用条件：final_accuracy。
+
+观察事实：
+
+- V4.1 历史审阅重新解析 104 个服务启动字段；三个正式数据集统一 Max。
+- 早期 GLM 合同采用不同输出预算、Thinking 与 >0 的连通性门槛，不能把这些设为新模型默认。
+
+证据基础：HISTORICAL_CONTRACT_AND_REPORT；因果状态：`HISTORICAL_REPORT_NOT_REPLAYED`。
+
+证据边界：
+
+- 具体 TP/PP、Max、High、预算及阈值均属于原合同，不能自动继承。
+- 本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+来源：[accuracy:Q02](knowledge-cases.md#source-accuracy-q02)、[accuracy:Q14](knowledge-cases.md#source-accuracy-q14)。
+
+<a id="case-b03"></a>
+## case:B03 子进程必须使用冻结评测器，prediction 不能替代原始账本：案例与证据
+
+归类规则：[B03](knowledge.md#b03)。归类关系不扩大案例结论。
+
+原状态：`HISTORICAL_CASE_NOT_RERUN`；适用条件：final_accuracy。
+
+观察事实：
+
+- LongBench worker 执行绝对脚本路径后导入已安装 OpenCompass，绕过隔离副本及 raw hooks。
+- 该作废 run 留下两条非空 prediction 但无 raw ledger，未并入后续正式 525 条。
+
+证据基础：HISTORICAL_INCIDENT_REPORT；因果状态：`HISTORICAL_REPORT_NOT_REPLAYED`。
+
+证据边界：
+
+- 本轮未重演该故障；缺失 raw 不能由后续正常 run 或 summary 事后重建。
+- 本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+来源：[accuracy:Q08](knowledge-cases.md#source-accuracy-q08)、[accuracy:Q02](knowledge-cases.md#source-accuracy-q02)。
+
+<a id="case-b04"></a>
+## case:B04 RTLBench 编译/仿真显式 fail-closed：案例与证据
+
+归类规则：[B04](knowledge.md#b04)。归类关系不扩大案例结论。
+
+原状态：`HISTORICAL_CASE_NOT_RERUN`；适用条件：final_accuracy。
+
+观察事实：
+
+- 历史 61 分因解析和 fail-open 误判而撤销；原通过集合中还识别出 4 个假通过。
+- 仿真内部 Simulation timeout 与外层进程超时是两种不同证据。
+
+证据基础：HISTORICAL_REVIEW；因果状态：`HISTORICAL_REPORT_NOT_REPLAYED`。
+
+证据边界：
+
+- 这些是原 harness 的缺陷，不意味着所有测试失败都是模型错误。
+- 本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+来源：[accuracy:Q03](knowledge-cases.md#source-accuracy-q03)、[accuracy:Q15](knowledge-cases.md#source-accuracy-q15)。
+
+<a id="case-b05"></a>
+## case:B05 RTLBench 冻结原 testbench，基准争议不能靠自建 oracle 消除：案例与证据
+
+归类规则：[B05](knowledge.md#b05)。归类关系不扩大案例结论。
+
+原状态：`HISTORICAL_CASE_NOT_RERUN`；适用条件：final_accuracy。
+
+观察事实：
+
+- 历史自行新建 oracle 的 148/149 分撤销；原 TB 对照为 67/160。
+- 用户后来只对已有指定 73/160 版本作单项接受，10 处历史 TB 变更和争议仍保留。
+
+证据基础：HISTORICAL_REVIEW_WITH_EXPLICIT_ACCEPTANCE_BOUNDARY；因果状态：`HISTORICAL_REPORT_NOT_REPLAYED`。
+
+证据边界：
+
+- 旧任务对精确版本的用户接受不授权新任务修改 TB，也不认证旧基准所有语义。
+- 本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+来源：[accuracy:Q03](knowledge-cases.md#source-accuracy-q03)、[accuracy:Q02](knowledge-cases.md#source-accuracy-q02)。
+
+<a id="case-b06"></a>
+## case:B06 RTL 提取按目标模块完整边界，不从首个 endmodule 截断：案例与证据
+
+归类规则：[B06](knowledge.md#b06)。归类关系不扩大案例结论。
+
+原状态：`HISTORICAL_CASE_NOT_RERUN`；适用条件：final_accuracy。
+
+观察事实：
+
+- 原 TB 技术对照保留 160 条完整正文与提取差异；22 处提取变化中包括普通/重复目标的前缀处理。
+
+证据基础：HISTORICAL_EXTRACTION_AUDIT；因果状态：`HISTORICAL_REPORT_NOT_REPLAYED`。
+
+证据边界：
+
+- 特定旧提取器规则不是适用于所有语言/模块结构的通用 parser；本轮未重新编译。
+- 本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+来源：[accuracy:Q02](knowledge-cases.md#source-accuracy-q02)、[accuracy:Q04](knowledge-cases.md#source-accuracy-q04)。
+
+<a id="case-b07"></a>
+## case:B07 LiveCodeBench 统一提取最终代码并全量离线重评：案例与证据
+
+归类规则：[B07](knowledge.md#b07)。归类关系不扩大案例结论。
+
+原状态：`HISTORICAL_CASE_NOT_RERUN`；适用条件：final_accuracy。
+
+观察事实：
+
+- 旧 test-output 提取器拿到首个 74 字符草稿，漏掉末尾完整程序。
+- 统一 v2 对全部 400 题重评，380→382；后续 I/O 修复到 383，历史版本分别保留。
+
+证据基础：HISTORICAL_FULL_RESCORING_REPORT；因果状态：`HISTORICAL_REPORT_NOT_REPLAYED`。
+
+证据边界：
+
+- “最后代码块”是当时版本规则，不能按样本输赢选择 first/last/longest；单题诊断不等于全量成绩。
+- 本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+来源：[accuracy:Q06](knowledge-cases.md#source-accuracy-q06)、[accuracy:Q04](knowledge-cases.md#source-accuracy-q04)。
+
+<a id="case-b08"></a>
+## case:B08 LiveCodeBench 文本/二进制 I/O 共用状态，错误哨兵不能按真值计分：案例与证据
+
+归类规则：[B08](knowledge.md#b08)。归类关系不扩大案例结论。
+
+原状态：`HISTORICAL_CASE_NOT_RERUN`；适用条件：final_accuracy。
+
+观察事实：
+
+- 旧 StringIO 无 .buffer，导致合法模型代码在评测器内失败；共享 BytesIO 兼容层四条路径通过。
+- 历史最终 400 题仅一题因 I/O 别名兼容恢复，其他 399 状态不变。
+
+证据基础：HISTORICAL_PREFLIGHT_AND_RESCORING_REPORT；因果状态：`HISTORICAL_REPORT_NOT_REPLAYED`。
+
+证据边界：
+
+- 兼容层不得改题意、输入、expected output 或测试规则；预检 PASS 不是模型精度 PASS。
+- 本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+来源：[accuracy:Q05](knowledge-cases.md#source-accuracy-q05)、[accuracy:Q04](knowledge-cases.md#source-accuracy-q04)。
+
+<a id="case-b09"></a>
+## case:B09 LiveCodeBench 仅加载冻结 release，不引入无关版本依赖：案例与证据
+
+归类规则：[B09](knowledge.md#b09)。归类关系不扩大案例结论。
+
+原状态：`HISTORICAL_CASE_NOT_RERUN`；适用条件：final_accuracy。
+
+观察事实：
+
+- 官方旧 loader 先下载所有版本再过滤，因缺 test2.jsonl 导致 v1 任务启动失败。
+- 修复只收紧下载列表，题目、公开/私有测试和评分未改。
+
+证据基础：HISTORICAL_LOADER_INCIDENT；因果状态：`HISTORICAL_REPORT_NOT_REPLAYED`。
+
+证据边界：
+
+- 该结论仅描述旧加载器；加载失败不是模型精度或 release_v1 不可用的结论。
+- 本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+来源：[accuracy:Q07](knowledge-cases.md#source-accuracy-q07)。
+
+<a id="case-b10"></a>
+## case:B10 LongBenchv2 只从最终正文提取 A-D，非空无选项按错计分：案例与证据
+
+归类规则：[B10](knowledge.md#b10)。归类关系不扩大案例结论。
+
+原状态：`HISTORICAL_CASE_NOT_RERUN`；适用条件：final_accuracy。
+
+观察事实：
+
+- 历史正文 None of the above 不包含 A-D，被确定性计错而非伪报 parser error。
+- 317/525 的独立计分只证明该原本地语料的计分一致；当前仍按用户指定的本地 525 条验收，披露内容重复，不称官方全量。
+
+证据基础：HISTORICAL_SCORING_WITH_CURRENT_SCOPE_CORRECTION；因果状态：`HISTORICAL_REPORT_NOT_REPLAYED`。
+
+证据边界：
+
+- 不得从 reasoning 中挑选对的选项；原 51.43% 线不是当前默认门槛。
+- 本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+来源：[accuracy:Q09](knowledge-cases.md#source-accuracy-q09)、[accuracy:A01](knowledge-cases.md#source-accuracy-a01)。
+
+<a id="case-b11"></a>
+## case:B11 Thinking、输出预算和重试规则在生成前冻结：案例与证据
+
+归类规则：[B11](knowledge.md#b11)。归类关系不扩大案例结论。
+
+原状态：`HISTORICAL_CASE_NOT_RERUN`；适用条件：final_accuracy。
+
+观察事实：
+
+- V4.1 原合同首轮 131072；仅空正文且 length 时再用 context_limit-prompt_tokens 请求一次，不允许第三次。
+- 旧 GLM 多轮增大预算后拼接结果另有历史合同，不能迁移为当前按错题重采样的默认。
+
+证据基础：HISTORICAL_CONTRACTS_WITH_VERSION_BOUNDARY；因果状态：`HISTORICAL_REPORT_NOT_REPLAYED`。
+
+证据边界：
+
+- 上述具体预算和两次请求只作为历史实例；新任务必须自己声明并冻结。
+- 本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+来源：[accuracy:Q10](knowledge-cases.md#source-accuracy-q10)、[accuracy:Q13](knowledge-cases.md#source-accuracy-q13)。
+
+<a id="case-b12"></a>
+## case:B12 编译器、glibc、上下文和工具失败先归类为环境/协议问题：案例与证据
+
+归类规则：[B12](knowledge.md#b12)。归类关系不扩大案例结论。
+
+原状态：`HISTORICAL_CASE_NOT_RERUN`；适用条件：final_accuracy。
+
+观察事实：
+
+- 宿主机 glibc 不兼容造成 RTL 重评 0 分，仅属无效环境诊断。
+- GLM 某部署请求上下文 503232 时，KV 初始化估计仅支持 153152，发生回退；这是改变配置的边界。
+
+证据基础：HISTORICAL_ENVIRONMENT_REPORT；因果状态：`HISTORICAL_REPORT_NOT_REPLAYED`。
+
+证据边界：
+
+- 不是说所有 0 分都属于环境问题；每次归因需实际错误和原样本证据。
+- 本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+来源：[accuracy:Q11](knowledge-cases.md#source-accuracy-q11)、[accuracy:Q12](knowledge-cases.md#source-accuracy-q12)。
+
+<a id="case-b13"></a>
+## case:B13 数值达线、基准有效性与完整交付分别判定：案例与证据
+
+归类规则：[B13](knowledge.md#b13)。归类关系不扩大案例结论。
+
+原状态：`HISTORICAL_CASE_NOT_RERUN`；适用条件：final_accuracy。
+
+观察事实：
+
+- V4.1 三项指定分数及联合均分被接受，但整体报告仍 NOT_ACCEPTED，因为历史 raw 和来源时间缺口。
+- 旧早期 >0 的连通性门槛不能迁移成最终模型质量门槛。
+
+证据基础：HISTORICAL_ACCEPTANCE_AUDIT；因果状态：`HISTORICAL_REPORT_NOT_REPLAYED`。
+
+证据边界：
+
+- 单次历史用户接受只对精确产物和合同生效，不是通用豁免。
+- 本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+来源：[accuracy:Q02](knowledge-cases.md#source-accuracy-q02)、[accuracy:Q03](knowledge-cases.md#source-accuracy-q03)、[accuracy:Q14](knowledge-cases.md#source-accuracy-q14)。
+
 <a id="case-r01"></a>
 ## case:R01 按真实生产 shape 分布调优，不能只优化一个 micro case：历史案例
 
@@ -1193,6 +1465,132 @@
 - 位置：`用户明确指令`。
 - SHA256：`652953f194f656756efd416b7904d72736d034c5d13000e70bd90582e9b81081`。
 - 审阅范围：本轮用户明确提出的通用规范；hash 按 statements 以换行连接的 UTF-8 文本计算，不是实测证据。
+
+<a id="source-accuracy-q01"></a>
+### accuracy:Q01
+
+- 位置：`vllm_d/flash41_speed_up_v1_acc_1st/reports/dataset_integrity.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`9189ce83572965e734f7646aa779d2a045b99e2ec202f8cb4f7bf1650490940d`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q02"></a>
+### accuracy:Q02
+
+- 位置：`vllm_d/flash41_speed_up_v1_acc_1st/reports/requirements_audit.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`869505bd6ac2fe7b7d1716d02b29d03873ded87d85c630e0dac128782c5f1e16`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q03"></a>
+### accuracy:Q03
+
+- 位置：`vllm_d/flash41_speed_up_v1_acc_1st/reports/rtlbench_score_version_policy.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`f1bc3eae853e2237b584f8b5cd8d0edba0094e7eb6dac0917bd2f4da3874cb5b`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q04"></a>
+### accuracy:Q04
+
+- 位置：`vllm_d/flash41_speed_up_v1_acc_1st/reports/reuse_guide_zh.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`64c05ed88bac1774ce21c32aaae710e221a1f13ee4548dc11d08fb829ecc0ed2`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q05"></a>
+### accuracy:Q05
+
+- 位置：`vllm_d/flash41_speed_up_v1_acc_1st/reports/lcb_io_compat_preflight.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`a161aec372d0d74df27fb5ce5e28373297e5ec5b278984cd27838be6665f279c`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q06"></a>
+### accuracy:Q06
+
+- 位置：`vllm_d/flash41_speed_up_v1_acc_1st/reports/incidents/lcb_final_code_extraction_20260914.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`960bff27bcebac658ceb484e913f3d49711eacaa512158af6f99a9d931fe09bf`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q07"></a>
+### accuracy:Q07
+
+- 位置：`vllm_d/flash41_speed_up_v1_acc_1st/reports/incidents/lcb_release_v1_loader_20260914.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`8bbeb6f7862ac15c1eb0b35bc6a95f30f4b47a1beeaa0d0a22ec0b6cbe665ac9`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q08"></a>
+### accuracy:Q08
+
+- 位置：`vllm_d/flash41_speed_up_v1_acc_1st/reports/incidents/longbench_20260914_worker_import_bypass.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`4c15e72b0fa2db3397c0b06ea50c345e46cb1379550160b52067848a12c2be97`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q09"></a>
+### accuracy:Q09
+
+- 位置：`vllm_d/flash41_speed_up_v1_acc_1st/reports/acceptance/LongBenchv2_full_acceptance.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`0c9e13245aa9d07c90f751de6268d1e7eb98d707f025836689d8195e11068d87`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q10"></a>
+### accuracy:Q10
+
+- 位置：`vllm_d/flash41_speed_up_v1_acc_1st/reports/max_tokens_audit.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`176f316c65ff516197a8d674ad4d471e11b39469b747dbad9833681a8d0bee2e`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q11"></a>
+### accuracy:Q11
+
+- 位置：`vllm_d/flash41_speed_up_v1_acc_1st/reports/incidents/rtlbench_counter_width_host_glibc_20260914.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`fa386d91d49b47c871a3701a34774c46fd9d8b26d779f7a430450abf18b2ef23`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q12"></a>
+### accuracy:Q12
+
+- 位置：`vllm_a/glm52_speed_up_v1_stable/reports/analysis/task1_lcb_503232_context_fallback_20260622_041000.json`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`dc131793d0651ab302ed4f65f679c671f3d8acd64083358adf85e6bd6d833c9b`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q13"></a>
+### accuracy:Q13
+
+- 位置：`vllm_a/glm52_speed_up_v1_stable/reports/acceptance/LiveCodeBench_LiveCodeBench_merged_1p1d_v1_thinking_true_rerun176_out131072_seq202752_20260621_203613_postprocess_acceptance.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`838ce29c9fd8b875b50f3e4cda1280d7606050897626fd9c3ac0f7a2f77ddb79`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q14"></a>
+### accuracy:Q14
+
+- 位置：`vllm_a/fp8_speed_up_v2_task_acc_v1/reports/contracts/RTLBench_contract.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`127736d9bd235ef17d5569c3b53a2f1252146579c6f54cdae57ded4236109d28`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-q15"></a>
+### accuracy:Q15
+
+- 位置：`vllm_d/flash41_speed_up_v1_acc_1st/reports/qa_progress_20260914.md`，第 1 行；锚点：报告标题及下文相应完整章节。
+- SHA256：`752fda1fb071d6c40e35cc1f106a4011da8b4e13c7baaf3f0ba9ac466979ca56`。
+- 审阅范围：阅读报告/合同相关章节，非独立重放全部模型请求或执行全部测试；保留当时版本与后续修订边界。
+
+<a id="source-accuracy-a01"></a>
+### accuracy:A01
+
+- 位置：`KSEO/src/kseo/data/datasets/longbench-historical-audit/audit.json`，第 1 行；锚点：unique_non_id_records 与 multiplicity_histogram。
+- SHA256：`0dfb18f1b978b73a41b838003cd01a8bdd8a684e0060646bc4f64b1458a5994d`。
+- 审阅范围：本轮对原 JSON 去掉 _id 后按完整内容核对：525 个 ID、105 条独立内容，每条重复 5 次；非模型重测。
+
+<a id="source-policy-u02"></a>
+### policy:U02
+
+- 位置：`用户明确指令`。
+- SHA256：`e149c824d8c21c43d806965440a2306dc24d7ce47a244b52b0056ea7eb0b0c17`。
+- 审阅范围：保留本轮用户指令的规范语句，不复制内部路径；hash 按 statements 以换行连接的 UTF-8 字符串计算，不是完整消息或性能结果的 hash。
+
+<a id="source-policy-u03"></a>
+### policy:U03
+
+- 位置：`用户明确指令`。
+- SHA256：`84d61ce28f3155a791f12f91ba86bc9b4e7cfd5be4531f1acb0d979fdcd82ea0`。
+- 审阅范围：当前用户指定本地冻结测试集优先；不替换官方版本，不按重复内容擅自去重或改分母。
 
 <a id="source-v41-s01"></a>
 ### v41:S01

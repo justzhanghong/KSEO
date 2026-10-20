@@ -78,7 +78,7 @@ def system_flow():
     nodes = [("环境与基线", ["能力与环境检查", "正确性基线"]), ("采集 Profile", ["当前源码与负载", "定位瓶颈点"]),
              ("诊断与路由", ["配置优先", "最大瓶颈点与收益"]), ("调用子流程", ["Configuration", "Scheduling", "Kernel"]),
              ("集成候选", ["隔离源码", "可逆 patch"]), ("E2E 验收", ["通过全部门禁", "再选择 best"]),
-             ("最终复验与交付", ["新 trial 完整复验", "证据与复现包"])]
+             ("最终复验与交付", ["E2E + 三项精度", "证据与复现包"])]
     for index, (title, lines) in enumerate(nodes):
         x = 44 + index * 170
         svg.card(x, 150, 150, 140, title, lines, size=17, body_size=13)

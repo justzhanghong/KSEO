@@ -173,3 +173,9 @@ passed_cases 必须与提取时的 cases 完全一致，两个检查必须为 tr
 推荐先接通已有的单节点部署包，之后增加 AIHub 与 P/D。部署 adapter 使用 `run_id` 和 `trial_id` 作为幂等标识；创建后把 training_id、Pod UID、GPU UUID、镜像和挂载反查结果写入原始产物。cleanup 只停止精确匹配本任务身份的服务，重复调用也应成功。
 
 Adapter 与其依赖的脚本应放在候选源码外，控制器会核对直接命令文件与自身工具的 SHA256。外部服务、间接导入模块、编译器和平台版本仍需由 preflight 固定；直接命令 hash 不等于完整供应链校验。
+
+## 三项最终精度 bridge
+
+`final_accuracy` 仅在最终 trial 执行。`examples/adapters/final_accuracy_bridge.py` 串行调用 RTLBench、LongBenchv2、LiveCodeBench 的独立真实 wrapper；`emit(benchmarks=...)` 交付 raw attempt、逐题终态与有效性审阅的相对路径和 SHA256。实际模型请求、编译/仿真及代码执行由可信 evaluator 在自身隔离环境完成。
+
+当前数据按本地冻结版本 160/525/400 验收，不替换为官方版本。完整合同、artifact 字段和踩坑见 [最终精度协议](final-accuracy.md)，数据导出见 [本地测试集](datasets.md)。

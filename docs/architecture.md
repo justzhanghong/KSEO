@@ -25,7 +25,9 @@ Runner 管理一个 trial 的生命周期和可靠执行。System Workflow 决�
 
 瓶颈候选排序采用 `share × (1 - 1 / achievable_speedup)` 估计可能节省的时间比例。估计值只用于路由和预算；gpu_time 可能含重叠时间，实际端到端收益仍由 E2E 测量判定。图中的“最大瓶颈点”表达当前优先处理的端到端瓶颈；标准化协议中的字段名 `hotspots` 保持兼容。
 
-最终复验的预算可以预留。搜索结束时，在新的 trial 中运行完整合同，再输出配置、累积 patch、Manifest、原始证据和中文报告。
+最终复验的预算可以预留。搜索结束时，在新的 trial 中重跑完整 E2E 合同，随后依次验收本地 RTLBench 160、LongBenchv2 525、LiveCodeBench 400；得分与证据有效性通过后再输出配置、累积 patch、Manifest、原始证据和中文报告。
+
+三项最终精度的合同、bridge 与来源边界见 [最终精度验收](final-accuracy.md)。
 
 ## Configuration 与 Scheduling 内部小流程
 

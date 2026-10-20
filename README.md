@@ -112,7 +112,7 @@ kseo validate ./runs/model-001/task.json \
 
 ## 经验转换
 
-经验按 **原则 → 方法 → 场景规则 → 案例与来源** 由粗到细组织：6 条原则、12 个方法、36 条规则、46 个案例，关联 54 条来源记录。原有 9 张代表性卡片和 V4.1 专项包均已纳入；本轮增加 GLM-5.1/5.2、V4-Flash 与 V4.1-Flash 的 20 条跨模型经验，覆盖生产 shape、峰值显存、CUDA Graph、最大瓶颈点、真实 P/D、MTP/Batch/KV 状态、API 与证据审查。
+经验按 **原则 → 方法 → 场景规则 → 案例与来源** 由粗到细组织：6 条原则、12 个方法、50 条规则、59 个案例，关联 72 条来源记录。原有 9 张代表性卡片和 V4.1 专项包均已纳入；本轮增加 GLM-5.1/5.2、V4-Flash 与 V4.1-Flash 的 20 条跨模型经验，覆盖生产 shape、峰值显存、CUDA Graph、最大瓶颈点、真实 P/D、MTP/Batch/KV 状态、API 与证据审查；新增 13 条最终精度经验及全模型规则 G-P02。
 
 **全模型规则 G-P01：速度优化必须数学等价，只允许浮点自身引入的微小数值差异。** 不要求 bitwise 一致；容差须在搜索前按 dtype、算子和 shape 冻结。数值接近或质量分数通过不能单独证明数学等价，历史经验不能豁免该前提。
 
@@ -135,7 +135,22 @@ kseo ingest /path/to/task.md /path/to/acceptance.json --out imported.json
 
 `ingest` 建立 `NEEDS_REVIEW` 卡片，做基础脱敏，不会把历史 PASS 自动当作新任务成功。补齐适用条件、来源和迁移限制并审查后，才能接入自动检索。见 [流程与经验迁移](docs/conversion.md)。
 
-Agent 请求新增 `knowledge_hierarchy`，携带原则、所选方法、规则、匹配案例、祖先关系与来源。全模型 G-P01 始终提供，V4.1 的 `model_recipe` 仍完整提供 11 条模型现行规则，均不受 top-k 截断。2048-token 含义、并发增长阈值和计时口径中的未明确项均保留为待确认，不能自动判 PASS。详见 [V4.1-Flash 优化经验](docs/models/deepseek-v4.1-flash.md)。知识和经验包尚未替代真实部署、warmup 审计和 Feature 采集 adapter。
+Agent 请求新增 `knowledge_hierarchy`，携带原则、所选方法、规则、匹配案例、祖先关系与来源。全模型 G-P01/G-P02 始终提供，V4.1 的 `model_recipe` 仍完整提供 11 条模型现行规则，均不受 top-k 截断。2048-token 含义、并发增长阈值和计时口径中的未明确项均保留为待确认，不能自动判 PASS。详见 [V4.1-Flash 优化经验](docs/models/deepseek-v4.1-flash.md)。知识和经验包尚未替代真实部署、warmup 审计和 Feature 采集 adapter。
+
+## 本地数据与最终精度
+
+测试集按本地冻结版本验收，不替换为官方数据：**GSM8K 1319、RTLBench 160、LongBenchv2 525、LiveCodeBench 400**。正文、清单、SHA256 和许可来源说明随仓库及安装包提交；大文件采用无损 gzip 分片。LongBench 含 105 条不同内容各重复 5 次，保留原顺序和 525 分母，披露该边界，不去重。
+
+```bash
+kseo dataset
+kseo dataset longbench-v2 --out ./data/longbench-v2
+kseo dataset livecodebench-v1 --out ./data/livecodebench-v1
+kseo knowledge --node G-P02
+```
+
+真实优化完成后，最终 trial 依次执行 **RTLBench → LongBenchv2 → LiveCodeBench**；三项得分、raw 和有效性均通过才可交付。GSM8K 可作为优化中的质量门禁，不能替代三项最终验收。0.4.0 的 measured 合同必须配置 `final_accuracy`，旧合同需补齐。真实 harness 通过 bridge 接入，当前未内置模型推理或代码执行沙箱。
+
+见 [本地数据与导出](docs/datasets.md)、[最终精度合同与踩坑](docs/final-accuracy.md)。
 
 ## 验证
 
@@ -151,7 +166,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 
 - 已实现 System 与三个优化子流程；实际 GPU 采样、Kernel 提取、平台部署及模型特定操作由 adapter 接入。
 - Configuration 使用有限网格搜索；Scheduling 与 Kernel 可接外部 Agent。当前没有内置 LLM 服务凭据或厂商 SDK。
-- 最终复验在新的 trial 中运行相同完整合同；独立测试集、冷启动和最终镜像验证需由实际 profile 与 adapter 明确实现。
+- 最终复验在新的 trial 中重跑 E2E，并运行三项最终精度。真实请求、RTL/代码测试、冷启动和最终镜像核验仍需实际 profile 与 adapter。
 - `bundle/` 输出本地源码与配置交付包。容器镜像构建、签名、发布和实际 runtime 核验由 build/deploy adapter 负责，KSEO 不会假装已生成或验收真实镜像。
 - 性能测量依据 adapter 提供的原始记录。可信 adapter、计时语义和外部 Agent 的运行隔离仍是实验可信度的前提。
 

@@ -8,7 +8,7 @@ from typing import Any
 
 from .util import KSEOError, canonical, finite, positive_int, read_json
 
-STAGES = ("preflight", "build", "deploy", "smoke", "profile", "benchmark", "quality", "api", "stability")
+STAGES = ("preflight", "build", "deploy", "smoke", "profile", "benchmark", "quality", "api", "stability", "final_accuracy")
 OPS = ("<", "<=", ">", ">=", "==", "!=")
 
 
@@ -65,6 +65,14 @@ def validate(config: dict[str, Any]) -> dict[str, Any]:
     if config["mode"] == "measured" and ("preflight" not in names or not config.get("cleanup")):
         raise KSEOError("measured 模式要求 preflight 和幂等 cleanup adapter")
     validation = config["validation"]
+    if config["mode"] == "measured" or "final_accuracy" in names or "final_accuracy" in validation:
+        from .final_accuracy import validate_policy
+        if "final_accuracy" not in names or "final_accuracy" not in validation or not config.get("final_validation", True):
+            raise KSEOError("真实优化必须配置 final_accuracy 和最终复验，执行三个完整精度数据集")
+        validate_policy(validation["final_accuracy"], config["mode"])
+        if not any(g.get("stage") == "final_accuracy" and g.get("field") == "final_accuracy.passed"
+                   and g.get("op") == "==" and g.get("value") is True for g in validation.get("gates", [])):
+            raise KSEOError("最终精度必须配置 final_accuracy.passed == true 硬门禁")
     cases = validation.get("cases", [])
     if not cases or len({c.get("id") for c in cases}) != len(cases):
         raise KSEOError("validation.cases 不能为空且 id 必须唯一")

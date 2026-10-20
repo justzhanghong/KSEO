@@ -8,12 +8,14 @@
 | --- | --- | --- | --- |
 | L1 | 优化原则 | 6 | 跨案例概括，不构成任意模型上的收益证明 |
 | L2 | 诊断与优化方法 | 12 | 决定检查和实验步骤，尚需实际工具与证据 |
-| L3 | 带条件的场景规则 | 36 | 1 条全模型数学等价规则、11 条 V4.1 现行规则、20 条跨模型迁移规则、4 条原有经验归纳 |
-| L4 | 历史案例与来源 | 46 | 20 个新整理案例、26 个原有案例；保留历史状态与缺口 |
+| L3 | 带条件的场景规则 | 50 | 全模型数学等价/最终精度规则、V4.1 现行规则、跨模型与评测迁移规则 |
+| L4 | 历史案例与来源 | 59 | 历史观察与本轮离线数据审计分别记录；均不代表本轮 GPU 实测 |
 
-关联 54 条来源记录：本批 23 条历史来源、已有 V4.1 包的 27 条历史来源，以及 4 条用户原文。来源记录数不等于独立复现次数。原有 9 张代表性摘要卡未保存逐卡直接来源 hash，明确保留此缺口，不补造引用。
+关联 72 条来源记录，包括历史材料、用户规范和本轮静态数据身份审计。来源记录数不等于独立复现次数。原有 9 张代表性摘要卡未保存逐卡直接来源 hash，明确保留此缺口，不补造引用。
 
 **通用前提 G-P01：速度优化必须数学等价。** 允许的差异限于浮点表示、舍入、等价运算重排或并行归约带来的微小误差，并满足搜索前冻结的容差。数学等价不要求 bitwise 一致；数值接近或质量分数通过也不能单独证明数学等价。该规则对所有模型和优化路径生效，不受 top-k 限制。
+
+**最终精度 G-P02：优化完成后验收 RTLBench、LongBenchv2、LiveCodeBench。** 三项全量与证据有效性均须通过。详见 [最终精度合同与踩坑](final-accuracy.md)。数据按本地冻结集合：RTLBench 160、LongBenchv2 525、LiveCodeBench 400；LongBench 保留 105 条内容各重复 5 次的原顺序和 525 分母，不换官方版本、不去重。
 
 ## 组织与证据边界
 
@@ -50,7 +52,7 @@ kseo knowledge --hierarchy --context examples/knowledge/glm52-pd-context.json --
 
 旧 `knowledge --context ...` 继续返回原有平面卡片；新分层接口覆盖本次跨模型规则。`--extra` 只用于旧接口，未审阅导入不会自动进入层级。
 
-外部 Agent 的 `knowledge_hierarchy` 始终带 6 条原则、全模型 G-P01 及所选方法、规则、匹配案例、祖先 ID 和来源。`--limit`/top-k 只截断迁移规则；匹配 V4.1 时，11 条模型现行规则完整保留，`model_recipe` 仍完整提供。当前合同和用户规则优先，旧参数、learned-experience 和历史案例不得覆盖；未知阈值仍待确认，不能自动 PASS。
+外部 Agent 的 `knowledge_hierarchy` 始终带 6 条原则、全模型 G-P01/G-P02 及所选方法、规则、匹配案例、祖先 ID 和来源。`--limit`/top-k 只截断迁移规则；匹配 V4.1 时，11 条模型现行规则完整保留，`model_recipe` 仍完整提供。当前合同和用户规则优先，旧参数、learned-experience 和历史案例不得覆盖；未知阈值仍待确认，不能自动 PASS。
 
 ## 原则 → 方法 → 规则
 
@@ -67,7 +69,7 @@ kseo knowledge --hierarchy --context examples/knowledge/glm52-pd-context.json --
 
 所需证据：实际模型 config/权重/forward；backend 与 runtime 指纹；正确参考与版本。
 
-场景规则：[R05](knowledge.md#r05) 功能开关不代表可用，先建立精确 backend 能力矩阵、[R10](knowledge.md#r10) 模型结构性适配先于性能，IndexShare 的复用范围必须明确。
+场景规则：[R05](knowledge.md#r05) 功能开关不代表可用，先建立精确 backend 能力矩阵、[R10](knowledge.md#r10) 模型结构性适配先于性能，IndexShare 的复用范围必须明确、[B09](knowledge.md#b09) LiveCodeBench 仅加载冻结 release，不引入无关版本依赖。
 
 <a id="m02"></a>
 #### M02 数学等价、数值误差与质量合同
@@ -78,7 +80,7 @@ kseo knowledge --hierarchy --context examples/knowledge/glm52-pd-context.json --
 
 所需证据：数学等价性说明与独立数值 oracle；不可变 dtype/容差/质量合同；逐样本终态与计分理由。
 
-场景规则：[R16](knowledge.md#r16) Thinking 模式与输出预算是质量合同，不能把截断直接归因数值精度、[G-P01](knowledge.md#g-p01) 速度优化必须数学等价，只允许浮点自身引入的微小差异、[V41-P05](knowledge.md#v41-p05) Feature 选择首个 MoE Layer 的下一层输入、[V41-P06](knowledge.md#v41-p06) 不以模型输出文本相似度作为验收门禁。
+场景规则：[R16](knowledge.md#r16) Thinking 模式与输出预算是质量合同，不能把截断直接归因数值精度、[G-P01](knowledge.md#g-p01) 速度优化必须数学等价，只允许浮点自身引入的微小差异、[B04](knowledge.md#b04) RTLBench 编译/仿真显式 fail-closed、[B06](knowledge.md#b06) RTL 提取按目标模块完整边界，不从首个 endmodule 截断、[B07](knowledge.md#b07) LiveCodeBench 统一提取最终代码并全量离线重评、[B08](knowledge.md#b08) LiveCodeBench 文本/二进制 I/O 共用状态，错误哨兵不能按真值计分、[B10](knowledge.md#b10) LongBenchv2 只从最终正文提取 A-D，非空无选项按错计分、[B11](knowledge.md#b11) Thinking、输出预算和重试规则在生成前冻结、[V41-P05](knowledge.md#v41-p05) Feature 选择首个 MoE Layer 的下一层输入、[V41-P06](knowledge.md#v41-p06) 不以模型输出文本相似度作为验收门禁。
 
 <a id="k02"></a>
 ### K02 围绕最大瓶颈点和 E2E 收益优化
@@ -193,7 +195,7 @@ kseo knowledge --hierarchy --context examples/knowledge/glm52-pd-context.json --
 
 所需证据：身份 Manifest；阶段与合同版本；最终产物的新 trial 结果。
 
-场景规则：[E01](knowledge.md#e01) 运行身份与计时口径不匹配时，正式比较无效、[E02](knowledge.md#e02) 候选通过后仍需最终不可变产物复验。
+场景规则：[E01](knowledge.md#e01) 运行身份与计时口径不匹配时，正式比较无效、[E02](knowledge.md#e02) 候选通过后仍需最终不可变产物复验、[B01](knowledge.md#b01) 全量验收核对内容身份，不能只核对 ID 数量、[B02](knowledge.md#b02) 最终精度保持最佳优化产物与服务行为一致、[B03](knowledge.md#b03) 子进程必须使用冻结评测器，prediction 不能替代原始账本、[B13](knowledge.md#b13) 数值达线、基准有效性与完整交付分别判定、[G-P02](knowledge.md#g-p02) 优化完成后进行 RTLBench、LongBenchv2、LiveCodeBench 最终精度验收。
 
 <a id="m12"></a>
 #### M12 失败分型与因果证据审查
@@ -203,11 +205,219 @@ kseo knowledge --hierarchy --context examples/knowledge/glm52-pd-context.json --
 
 所需证据：失败阶段/类别；正反例与未排除因素；因果链和待补证清单。
 
-场景规则：[E03](knowledge.md#e03) 加载或环境失败不作为有效性能负分、[E04](knowledge.md#e04) 事故假设必须与机制证明和输出根因分开。
+场景规则：[E03](knowledge.md#e03) 加载或环境失败不作为有效性能负分、[E04](knowledge.md#e04) 事故假设必须与机制证明和输出根因分开、[B05](knowledge.md#b05) RTLBench 冻结原 testbench，基准争议不能靠自建 oracle 消除、[B12](knowledge.md#b12) 编译器、glibc、上下文和工具失败先归类为环境/协议问题。
 
 ## 场景规则细目
 
 G-P01 是本轮明确补充的全模型前提。V4.1 原规则完整内容见模型 recipe；本表不重写它的阈值、停用项或计数语义。
+
+<a id="b01"></a>
+### B01 全量验收核对内容身份，不能只核对 ID 数量
+
+上层方法：[M11](knowledge.md#m11)。
+
+适用条件：final_accuracy。
+
+类别：**需要当前任务验证的迁移规则**。冻结数据版本、原文件 hash、顺序和 ID，同时核对去掉 ID 后的内容身份；本地快照、官方版本、裁剪子集和重复扩增分别命名；当前任务按用户指定的本地集合验收，不替换或去重。
+
+证据基础：CURRENT_OFFLINE_DATA_AUDIT。
+
+- 边界：历史 317/525 只绑定原本地语料与当时合同，不能替代新模型实测或声称官方全量；重复性质作为证据边界披露，不改变本地验收分母。
+- 边界：本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+下钻案例：[case:B01](knowledge-cases.md#case-b01)。
+
+<a id="b02"></a>
+### B02 最终精度保持最佳优化产物与服务行为一致
+
+上层方法：[M11](knowledge.md#m11)。
+
+适用条件：final_accuracy。
+
+类别：**需要当前任务验证的迁移规则**。最终三项测试使用最终源码、镜像、配置、拓扑及明确的采样/Thinking/上下文协议；需要调整评测协议时冻结新版本并保留可比 baseline。
+
+证据基础：HISTORICAL_CONTRACT_AND_REPORT。
+
+- 边界：具体 TP/PP、Max、High、预算及阈值均属于原合同，不能自动继承。
+- 边界：本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+下钻案例：[case:B02](knowledge-cases.md#case-b02)。
+
+<a id="b03"></a>
+### B03 子进程必须使用冻结评测器，prediction 不能替代原始账本
+
+上层方法：[M11](knowledge.md#m11)。
+
+适用条件：final_accuracy。
+
+类别：**需要当前任务验证的迁移规则**。核对所有 worker 的真实 import 路径、evaluator/提取器 hash，并逐样本绑定完整 prompt、raw attempt 与所计分的 final_content；缺失历史 raw 不补造。
+
+证据基础：HISTORICAL_INCIDENT_REPORT。
+
+- 边界：本轮未重演该故障；缺失 raw 不能由后续正常 run 或 summary 事后重建。
+- 边界：本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+下钻案例：[case:B03](knowledge-cases.md#case-b03)。
+
+<a id="b04"></a>
+### B04 RTLBench 编译/仿真显式 fail-closed
+
+上层方法：[M02](knowledge.md#m02)。
+
+适用条件：final_accuracy。
+
+类别：**需要当前任务验证的迁移规则**。同时核对编译退出码、仿真退出码、成功/失败标记及逐测试终态；没有异常文本或进程退出 0 不能单独判通过。
+
+证据基础：HISTORICAL_REVIEW。
+
+- 边界：这些是原 harness 的缺陷，不意味着所有测试失败都是模型错误。
+- 边界：本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+下钻案例：[case:B04](knowledge-cases.md#case-b04)。
+
+<a id="b05"></a>
+### B05 RTLBench 冻结原 testbench，基准争议不能靠自建 oracle 消除
+
+上层方法：[M12](knowledge.md#m12)。
+
+适用条件：final_accuracy。
+
+类别：**需要当前任务验证的迁移规则**。模型回答、提取产物、原 testbench、执行环境和规则逐项 hash 绑定；发现矛盾时记录归因和有效性缺口，不自行补期望输出、删题或以目标分数调规则。
+
+证据基础：HISTORICAL_REVIEW_WITH_EXPLICIT_ACCEPTANCE_BOUNDARY。
+
+- 边界：旧任务对精确版本的用户接受不授权新任务修改 TB，也不认证旧基准所有语义。
+- 边界：本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+下钻案例：[case:B05](knowledge-cases.md#case-b05)。
+
+<a id="b06"></a>
+### B06 RTL 提取按目标模块完整边界，不从首个 endmodule 截断
+
+上层方法：[M02](knowledge.md#m02)。
+
+适用条件：final_accuracy。
+
+类别：**需要当前任务验证的迁移规则**。冻结确定性的目标模块提取规则，处理前缀、重复目标与辅助模块依赖；保留原正文、提取前后 diff 和全体样本，不能按仿真输赢挑选提取版本。
+
+证据基础：HISTORICAL_EXTRACTION_AUDIT。
+
+- 边界：特定旧提取器规则不是适用于所有语言/模块结构的通用 parser；本轮未重新编译。
+- 边界：本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+下钻案例：[case:B06](knowledge-cases.md#case-b06)。
+
+<a id="b07"></a>
+### B07 LiveCodeBench 统一提取最终代码并全量离线重评
+
+上层方法：[M02](knowledge.md#m02)。
+
+适用条件：final_accuracy。
+
+类别：**需要当前任务验证的迁移规则**。只按预先冻结、确定性的 code-generation 规则处理 final_content；修 parser 后在相同完整数据和原测试上统一重评，不只替换失败题，不改正文或测试。
+
+证据基础：HISTORICAL_FULL_RESCORING_REPORT。
+
+- 边界：“最后代码块”是当时版本规则，不能按样本输赢选择 first/last/longest；单题诊断不等于全量成绩。
+- 边界：本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+下钻案例：[case:B07](knowledge-cases.md#case-b07)。
+
+<a id="b08"></a>
+### B08 LiveCodeBench 文本/二进制 I/O 共用状态，错误哨兵不能按真值计分
+
+上层方法：[M02](knowledge.md#m02)。
+
+适用条件：final_accuracy。
+
+类别：**需要当前任务验证的迁移规则**。预检 input/print、stdin.buffer/stdout.buffer、混合读写共享游标；-1/-2 均为错误状态，禁止 all([-1,-2]) 一类 fail-open。
+
+证据基础：HISTORICAL_PREFLIGHT_AND_RESCORING_REPORT。
+
+- 边界：兼容层不得改题意、输入、expected output 或测试规则；预检 PASS 不是模型精度 PASS。
+- 边界：本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+下钻案例：[case:B08](knowledge-cases.md#case-b08)。
+
+<a id="b09"></a>
+### B09 LiveCodeBench 仅加载冻结 release，不引入无关版本依赖
+
+上层方法：[M01](knowledge.md#m01)。
+
+适用条件：final_accuracy。
+
+类别：**需要当前任务验证的迁移规则**。固定 release_v1 的 400 题及原顺序/测试 payload；加载器按版本先选择文件，再下载，不能漂移至 v2..v6。
+
+证据基础：HISTORICAL_LOADER_INCIDENT。
+
+- 边界：该结论仅描述旧加载器；加载失败不是模型精度或 release_v1 不可用的结论。
+- 边界：本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+下钻案例：[case:B09](knowledge-cases.md#case-b09)。
+
+<a id="b10"></a>
+### B10 LongBenchv2 只从最终正文提取 A-D，非空无选项按错计分
+
+上层方法：[M02](knowledge.md#m02)。
+
+适用条件：final_accuracy。
+
+类别：**需要当前任务验证的迁移规则**。冻结答案 parser，只读取 final_content；显式区分无有效选项、不可解析、传输失败，全部留在总分母，不因非空无选项重采样。
+
+证据基础：HISTORICAL_SCORING_WITH_CURRENT_SCOPE_CORRECTION。
+
+- 边界：不得从 reasoning 中挑选对的选项；原 51.43% 线不是当前默认门槛。
+- 边界：本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+下钻案例：[case:B10](knowledge-cases.md#case-b10)。
+
+<a id="b11"></a>
+### B11 Thinking、输出预算和重试规则在生成前冻结
+
+上层方法：[M02](knowledge.md#m02)。
+
+适用条件：final_accuracy。
+
+类别：**需要当前任务验证的迁移规则**。每套正式数据统一模型行为与预算策略，逐 attempt 留痕；仅允许合同事先授权的重试条件，非空正常回答不因低分重采样，失败和空正文保留分母。
+
+证据基础：HISTORICAL_CONTRACTS_WITH_VERSION_BOUNDARY。
+
+- 边界：上述具体预算和两次请求只作为历史实例；新任务必须自己声明并冻结。
+- 边界：本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+下钻案例：[case:B11](knowledge-cases.md#case-b11)。
+
+<a id="b12"></a>
+### B12 编译器、glibc、上下文和工具失败先归类为环境/协议问题
+
+上层方法：[M12](knowledge.md#m12)。
+
+适用条件：final_accuracy。
+
+类别：**需要当前任务验证的迁移规则**。对齐编译器、仿真器、Python/依赖及容器身份，保留工具错误；上下文资源不足不能静默换配置或删长题后继续同一正式验收。
+
+证据基础：HISTORICAL_ENVIRONMENT_REPORT。
+
+- 边界：不是说所有 0 分都属于环境问题；每次归因需实际错误和原样本证据。
+- 边界：本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+下钻案例：[case:B12](knowledge-cases.md#case-b12)。
+
+<a id="b13"></a>
+### B13 数值达线、基准有效性与完整交付分别判定
+
+上层方法：[M11](knowledge.md#m11)。
+
+适用条件：final_accuracy。
+
+类别：**需要当前任务验证的迁移规则**。将所选 run、数据、代码、提取器、测试、逐题结果和明确用户决定绑定；单项分数/联合均分达线不能覆盖 raw、材料来源和运行记录缺口。
+
+证据基础：HISTORICAL_ACCEPTANCE_AUDIT。
+
+- 边界：单次历史用户接受只对精确产物和合同生效，不是通用豁免。
+- 边界：本轮未重新请求模型或执行全部历史编译/仿真/代码测试；历史分数不属于 KSEO 新实测。
+
+下钻案例：[case:B13](knowledge-cases.md#case-b13)。
 
 <a id="e01"></a>
 ### E01 运行身份与计时口径不匹配时，正式比较无效
@@ -282,7 +492,7 @@ G-P01 是本轮明确补充的全模型前提。V4.1 原规则完整内容见模
 
 适用条件：通用检查；不含新模型的数值默认或通过承诺。
 
-类别：**全模型通用的当前用户规则**。不要求浮点 bitwise 一致，不提供全局默认 atol/rtol，不包含自动数学证明器。
+类别：**全模型通用的当前用户规则**。规则不是已经执行的真实模型验收证据。
 
 - 所有模型及 Configuration、Scheduling、Kernel、P/D、cache 路径的速度优化均须保持原计算的数学定义；给出变换与原 forward 的等价性说明。
 - 数学等价不要求浮点 bitwise 一致；误差须能解释为浮点表示、舍入、运算顺序或并行归约造成的微小差异。
@@ -291,14 +501,35 @@ G-P01 是本轮明确补充的全模型前提。V4.1 原规则完整内容见模
 - 数值接近不单独证明数学等价，有限样本 oracle 通过不构成全域证明；数学依据、数值误差与有效合同的 E2E 门禁都要检查。
 - 本规则不重新启用模型输出文本相似度门禁，也不要求采样文本逐字一致；Feature 仅在当前合同启用时按对应选层规则执行。
 
-所需证据：数学等价性说明与原/新计算路径对应；冻结的 dtype、误差口径、容差和参考身份；真实 shape/边界/mask/position 的独立数值比较及实际误差；当前合同中仍有效的质量与 E2E 结果。
-
-完整规则：`kseo knowledge --node G-P01`。不重新启用已退役的输出文本相似度门禁；数学依据、独立数值 oracle 和当前质量门禁分别检查。
+完整规则：`kseo knowledge --node G-P01`；各项具体证据及实现边界见 policy。当前规则不重新启用已退役的输出文本相似度门禁。
 
 证据基础：CURRENT_USER_POLICY。
 
 - 边界：这是必须遵守的规范，不代表 KSEO 已自动证明任意候选数学等价。
 - 边界：数值 oracle 或质量分数通过不能代替数学等价性依据；本轮没有 GPU 复测。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="g-p02"></a>
+### G-P02 优化完成后进行 RTLBench、LongBenchv2、LiveCodeBench 最终精度验收
+
+上层方法：[M11](knowledge.md#m11)。
+
+适用条件：通用检查；不含新模型的数值默认或通过承诺。
+
+类别：**全模型通用的当前用户规则**。规则不是已经执行的真实模型验收证据。
+
+- System 完成速度优化和最佳产物复验后，以同一最终产物依次执行 RTLBench、LongBenchv2、LiveCodeBench 全量精度；不能用 GSM8K 替代。
+- 先冻结数据版本、完整样本/内容身份、prompt、Thinking、预算、重试、parser、evaluator 和数值门槛，缺失时保持未验收。
+- 真实 measured 合同必须配置 final_accuracy；三个数据集均从 raw attempt 与逐样本结果独立重算，并检查有效性审阅。
+- 当前数据入口以本地冻结集合为准：RTLBench 160、LongBenchv2 525、LCB release_v1 400；LongBench 的 525 条对应 105 条内容各重复 5 次，保留原顺序和 525 分母，不能换官方版本或自行去重。
+- 遵守 B01-B13 的失败分类、冻结 oracle、统一重评和来源边界；旧任务预算、得分和用户接受不自动迁移。
+
+完整规则：`kseo knowledge --node G-P02`；各项具体证据及实现边界见 policy。当前规则不重新启用已退役的输出文本相似度门禁。
+
+证据基础：CURRENT_USER_POLICY。
+
+- 边界：规则和接口已建立不代表三项真实模型测试已经运行；本轮未启动模型或占用 GPU。
 
 下钻案例：规则声明；无独立经验案例。
 
@@ -910,12 +1141,13 @@ G-P01 是本轮明确补充的全模型前提。V4.1 原规则完整内容见模
 | `tools` | 对外提供工具消息协议 |
 | `multimodal` | 实际支持多模态路径 |
 | `shared_storage` | 部署可变产物使用共享存储 |
+| `final_accuracy` | 当前任务已声明最终三项精度验收；不代表评测已通过 |
 
 案例筛选只判断索引已声明的模型/硬件/能力字段。本批新案例未完整结构化原 GPU、backend commit、拓扑与全部负载，因此同模型案例被返回只表示相关，完整迁移资格仍须通过 M01 能力与身份核对。
 
 ## 数据与维护
 
-主体是 `src/kseo/data/knowledge-hierarchy.json`；现有规则/卡片通过 `legacy_links` 引用原始 recipe，运行时读取原文，不维护覆盖原规则的副本。层级加载会检查 ID、连续父子层级、引用闭合和证据边界；来源用 `cross:`/`v41:` 命名空间避免同名 ID 冲突。
+主体是 `src/kseo/data/knowledge-hierarchy.json`，最终精度经验位于 `experience-final-accuracy.json`；现有规则/卡片通过 `legacy_links` 引用原始 recipe。层级加载检查 ID、连续层级、引用闭合与证据边界；来源使用 `cross:`/`v41:`/`accuracy:` 命名空间。
 
 公开来源只保留相对实验路径或文件名、行号（本批来源）、SHA256 和审阅范围。原文件未随仓库公开，无法只靠 hash 在公开环境复算历史结果。证据不足项必须补齐后另建结论，不能回写历史失败为通过。
 

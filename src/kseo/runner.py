@@ -129,6 +129,7 @@ class Runner:
                 (directory / "proposal.diff").write_bytes(patch.read_bytes())
             write_json(directory / "parameters.json", parameters)
             identity = {"run_id": self.state["run_id"], "trial_id": identifier,
+                        "phase": phase,
                         "contract_sha256": self.state["contract_sha256"], "parameters_sha256": digest(parameters),
                         "source_revision": revision, "image": self.config["inputs"]["image"],
                         "model": self.config["inputs"]["model"],
@@ -140,6 +141,8 @@ class Runner:
             self.save()
             for step in self.config["steps"]:
                 stage = step["name"]
+                if stage == "final_accuracy" and phase != "final":
+                    continue
                 record["stage"] = stage
                 self.save()
                 self.event("stage_start", trial=identifier, stage=stage)
@@ -150,7 +153,7 @@ class Runner:
                 result_path = Path(variables["stage_dir"]) / "result.json"
                 result = validation.ingest_stage(result_path, identity, self.config["mode"], stage, self.config["validation"])
                 record["results"][stage] = result
-                decisions = validation.gates(record["results"], self.config["validation"], stage)
+                decisions = validation.gates(record["results"], self.config["validation"], stage, phase=phase)
                 record["gates"].extend(decisions)
                 write_json(directory / "normalized.json", record["results"])
                 self.event("stage_finish", trial=identifier, stage=stage, result_sha256=file_digest(result_path))
@@ -161,7 +164,7 @@ class Runner:
                     record["status"] = "REJECTED_PERFORMANCE" if stage == "benchmark" else "REJECTED_VALIDATION"
                     break
             else:
-                decisions = validation.gates(record["results"], self.config["validation"])
+                decisions = validation.gates(record["results"], self.config["validation"], phase=phase)
                 record["gates"] = decisions
                 if all(gate["pass"] for gate in decisions):
                     record["score"] = validation.score(record["results"], self.config["validation"])
@@ -251,6 +254,7 @@ class Runner:
     def check_tools(self) -> None:
         variables = {"config_dir": self.state["config_dir"], "package_dir": str(Path(__file__).parent), "python": sys.executable}
         paths = set(Path(__file__).parent.rglob("*.py"))
+        paths.update(Path(__file__).parent.joinpath("data").glob("*.json"))
         commands = []
         def collect(value):
             if isinstance(value, dict):
@@ -315,6 +319,14 @@ class Runner:
                        "source_patch_sha256": patch_sha, "note": "本地源码与配置交付包；真实镜像由 build adapter 产物提供。"})
             lines += [f"最佳已通过候选：`{best['id']}`，objective 为 `{best['score']}`。", "",
                       "`bundle/` 保存配置和相对基线的累积源码补丁。请保留完整运行目录以追溯证据。", ""]
+        if self.config["validation"].get("final_accuracy"):
+            final = next((t for t in self.state["trials"] if t["id"] == self.state.get("final_trial")), None)
+            results = (final or {}).get("results", {}).get("final_accuracy", {}).get("benchmarks", {})
+            lines += ["## 最终精度", "", "| 数据集 | 完整样本 | 得分 | 有效性审阅 | 结论 |", "| --- | --- | --- | --- | --- |"]
+            for suite in self.config["validation"]["final_accuracy"]["suites"]:
+                value = results.get(suite["id"], {})
+                lines.append(f"| {suite['id']} | {value.get('samples', 'NOT_RUN')} | {value.get('score', '')} | {value.get('validity_review_passed', False)} | {'PASS' if value.get('passed') else 'NOT_PASSED'} |")
+            lines += ["", "分数与证据有效性同时验收；未运行、缺失 raw 或未解决争议均不自动通过。", ""]
         (self.root / "report.md").write_text("\n".join(lines), encoding="utf-8")
 
     def run(self, task_path: Path | None = None) -> dict:

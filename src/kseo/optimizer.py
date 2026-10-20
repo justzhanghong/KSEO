@@ -38,6 +38,9 @@ def agent(config: dict, state: dict, directory: Path, variables: dict, environme
         cards += read_json(learned)["cards"]
     from .recipes import for_context
     recipe = for_context(config["context"])
+    knowledge_context = dict(config["context"])
+    if config["validation"].get("final_accuracy"):
+        knowledge_context["capabilities"] = [*knowledge_context.get("capabilities", []), "final_accuracy"]
     if recipe is not None:
         # 现行规则由完整 recipe 提供，历史 top-k 保留给实际案例。
         cards = [card for card in cards if card.get("status") != "CURRENT_USER_POLICY"]
@@ -46,7 +49,7 @@ def agent(config: dict, state: dict, directory: Path, variables: dict, environme
                "history": state["trials"], "best": state.get("best"),
                "source_dir": variables["source_dir"], "proposal_dir": str(directory),
                "experience": retrieve(config["context"], cards),
-               "knowledge_hierarchy": retrieve_hierarchy(config["context"]),
+               "knowledge_hierarchy": retrieve_hierarchy(knowledge_context),
                "instructions": "只向 proposal_dir 写 proposal.json 和可选 patch.diff。不得修改 source_dir、合同或验收器。每次只提出一个可检验假设。"
                                " knowledge_hierarchy 按原则、方法、场景规则、案例组织；必须保留 evidence_boundary。"
                                " 所有速度优化必须数学等价，只允许浮点自身造成的微小差异，并满足预先冻结的数值容差；质量分数通过不能替代等价性。"
