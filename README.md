@@ -16,6 +16,34 @@ KSEO 参考 GEAK 的 System 与 Kernel 分层设计，组织端到端推理优�
 
 优化真实模型时，你需要提供模型路径、基础源码、基础镜像、可用服务器或集群、优化目标等信息。Agent 再根据这些信息准备环境、启动服务、分析性能、修改代码和运行测试。当前已提供优化流程和接入接口，实际执行脚本还需要由 Agent 根据具体平台接通。
 
+示例 Prompt（模型、资源及目标数值按每次任务提供，以下示例约定 1K=1024）：
+
+```text
+使用KSEO完成GLM-5.3-Flash模型适配和推理优化。
+- 基础材料：
+  - KSEO仓库：http://192.168.70.8/zhanghong/kseo
+  - 模型路径：/nfs/AE/zhanghong/ZhipuAI/GLM-5.3-Flash/
+  - vLLM源码：https://github.com/Malav-P/vllm/tree/glm53flash-a100
+  - 基础镜像：192.168.14.129:80/ae/vllm_openai_ssh:v0.26.0
+- 相关约束：
+  - 最大上下文固定为：256K，1k=1024。
+- 目标：
+  - 单轮对话场景目标：72K输入256输出，1/2/3并发，TTFT/TPOT < 10s/30ms，thinking固定为high，GSM8K≥95%、RTLBench≥40%、LongBench≥59%、LiveCodeBench≥86%。
+  - 单轮对话场景阶段目标：72K输入256输出，1/2/3并发，TTFT/TPOT，30s/50ms、20s/50ms、15s/40ms、12s/40ms、10s/40ms、10s/30ms。
+  - 多轮对话场景目标：开启KVOffloading，TTFT至少下降30%。
+  - 最终部署目标：保证正确性的情况下优化推理速度、测试模型精度、完成模型服务API验证、稳定性验证、实现一键部署。
+  - 其余目标和约束使用KSEO模型要求。
+- 硬件资源：
+  - 可用的AIHub集群：655，单台八卡A800机器。
+  - AIHub网址：http://192.168.11.18:30021/
+  - AIHub使用文档：/nfs/AE/zhanghong/from_lixiao/aihub_docs.json
+- 权限信息：
+  - AIHub用户token：/nfs/AE/zhanghong/workflow/vllm_d/aihub_token.md
+  - 本机用户密码：/nfs/AE/zhanghong/workflow/tmp_vllm_a//server_info.md，其中，Windows机器有访问外网的权限。
+  - 任务执行过程中所有中间结果保存到：/nfs/AE/zhanghong/workflow/tmp_vllm_a/glm53_flash_v1/
+  - GitLab权限：本机用户zhanghong具有GitLab权限。
+```
+
 仓库里的 CPU 示例使用模拟数据（`synthetic`），用于检查优化流程能否正常走通。这些示例的速度和收益不代表真实模型的优化结果。
 
 ## Architecture
