@@ -19,7 +19,7 @@
 <text x="962" y="202" font-size="20" fill="#10294a" font-weight="700">返回参数候选</text>
 <text x="44" y="350" font-size="23" fill="#10294a" font-weight="700">Scheduling 子流程</text>
 <rect x="44" y="378" width="270" height="80" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
-<text x="62" y="412" font-size="20" fill="#10294a" font-weight="700">读取当前热点</text>
+<text x="62" y="412" font-size="20" fill="#10294a" font-weight="700">读取最大瓶颈点</text>
 <path d="M314 418 H340" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
 <rect x="344" y="378" width="270" height="80" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
 <text x="362" y="412" font-size="20" fill="#10294a" font-weight="700">形成可检验假设</text>
@@ -29,5 +29,5 @@
 <path d="M914 418 H940" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
 <rect x="944" y="378" width="270" height="80" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
 <text x="962" y="412" font-size="20" fill="#10294a" font-weight="700">返回可回退候选</text>
-<text x="44" y="550" font-size="18" fill="#56708b">Scheduling 承接 host、通信与调度；按当前 Profile 路由，历史经验作为辅助。</text>
+<text x="44" y="550" font-size="18" fill="#56708b">Scheduling 承接 host、通信与调度；按最大瓶颈点与收益路由，历史经验作为辅助。</text>
 </g></svg>

@@ -80,7 +80,7 @@
         "普通 decoder 层使用 [tokens, hc_mult * hidden_size]，PP0 首层还有 [tokens, hidden_size] 路径",
         "正式 50K 请求触发 JIT，报告归因为增加约 4s 延迟"
       ],
-      "transfer_hypothesis": "warmup 用 operator、shape、dtype、布局、PP角色、执行路径和编译选项联合索引，检查真实覆盖。",
+      "transfer_hypothesis": "用 operator、shape、dtype、布局、PP角色、执行路径和编译选项定位首次路径。当前 V4.1 遵守 V41-P02：仅一个声明的 model-forward warmup shape，不能以逐个预热评测 shape 规避冷路径。",
       "limits": [
         "该卡不包含 exp009 修复后的独立收益证明"
       ],
@@ -131,7 +131,7 @@
         "guard-off 出现 IncompleteRead，guard-on 返回 HTTP400 context_length_exceeded",
         "报告记录修复后观察窗口为 60s"
       ],
-      "transfer_hypothesis": "P/D admission 在执行 Prefill 前校验实际输入和输出预算，并覆盖取消、超时、错误响应和释放。",
+      "transfer_hypothesis": "P/D admission 在 Prefill 前区分输入本身超限与仅输入+输出预算超限，并覆盖取消、超时、错误响应和释放。当前 V4.1 遵守 V41-P09：输入超限才拒绝，输入可容纳时裁剪输出预算，不把本卡的旧拒绝行为作为通用默认。",
       "limits": [
         "60s 无异常不能证明任意负载下长期稳定"
       ],
@@ -146,7 +146,7 @@
       "observations": [
         "candidate_exp028_acceptance.json 的 decision 为 PASS",
         "同一记录要求下一步执行 fresh final-image deployment、完整 speed/API 复验和两轮稳定性",
-        "该任务的 Feature 与输出相似性门禁已按当时用户策略停用"
+        "该任务的 Feature 与输出相似性门禁已按当时用户策略停用；这是历史合同事实，Feature 启用时按当前 V41-P05 选层，不能从本卡推导所有新任务均应停用"
       ],
       "transfer_hypothesis": "每个 decision 必须带 stage 和 contract_version；门禁列表从当前有效合同生成。",
       "limits": [

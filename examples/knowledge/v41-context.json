@@ -1,0 +1,6 @@
+{
+  "model_family": "deepseek_v4_1",
+  "gpu_arch": "sm80",
+  "backend": "vllm",
+  "capabilities": ["mhc", "prefix_cache", "target_verified_speculation", "kv_offloading"]
+}

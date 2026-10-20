@@ -12,6 +12,9 @@ from .util import KSEOError, file_digest, read_json, redact, write_json
 
 def load_cards(extra: Path | None = None) -> list[dict]:
     cards = json.loads(files("kseo").joinpath("data/experience.json").read_text(encoding="utf-8"))["cards"]
+    from .recipes import catalog, load_recipe
+    for entry in catalog():
+        cards += load_recipe(entry["id"])["cards"]
     if extra:
         value = read_json(extra)
         cards += value["cards"] if isinstance(value, dict) else value
@@ -31,7 +34,7 @@ def retrieve(context: dict, cards: list[dict], limit: int = 8) -> list[dict]:
             continue
         score = len(conditions) * 2 + len(required)
         selected.append((score, card))
-    return [card for _, card in sorted(selected, key=lambda pair: (-pair[0], pair[1]["id"]))[:limit]]
+    return [card for _, card in sorted(selected, key=lambda pair: (-pair[1].get("priority", 0), -pair[0], pair[1]["id"]))[:limit]]
 
 
 def import_materials(paths: list[Path], output: Path) -> int:

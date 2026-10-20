@@ -30,6 +30,8 @@ KSEO 的 System 调用 Configuration、Scheduling 和 Kernel 子流程。后两�
 
 request 含当前合同、context、历史结果、最佳候选、源码目录、proposal_dir 及匹配经验。本次流水线已形成的 `learned-experience.json` 也参与检索。原始 profiling 和各阶段产物可通过 history 中的 trial directory 在 run_dir 下定位。需要更细的瓶颈信息时，应先检查实际 profiling 产物，不从 kernel 名称猜测端到端收益。
 
+明确匹配 V4.1-Flash 时，request 还包含完整 `model_recipe`：现行测量原则、规则版本、来源索引、所需证据和未明确参数。它不受经验 top-k 截断；历史案例与 learned-experience 不得覆盖当前规则。Feature 的条件选层不等于重新启用已退役门禁，未知增长倍率、2048 阈值语义和计时口径不得猜测。recipe 是执行约束与建议，不是已经完成的验收证据。
+
 Kernel proposer 还会收到 `workflow.oracle_dir`、`oracle_sha256`、`cases` 和 `editable_files`。oracle 只读，patch 必须只修改 editable_files；直接修改 source_dir 或 oracle 会使候选失效。
 
 ## 提案

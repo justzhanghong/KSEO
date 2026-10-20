@@ -47,6 +47,10 @@ def parser() -> argparse.ArgumentParser:
     knowledge = sub.add_parser("knowledge", help="按结构和硬件条件检索经验")
     knowledge.add_argument("--context", required=True, type=Path, help="context JSON")
     knowledge.add_argument("--extra", type=Path)
+    knowledge.add_argument("--limit", type=int, default=8, help="返回经验条数；现行规则另由 model recipe 完整提供")
+    recipe = sub.add_parser("recipe", help="查看模型经验及现行测量规则；不是部署 adapter")
+    recipe.add_argument("name", nargs="?", help="例如 deepseek-v4.1-flash；省略时列出已有经验包")
+    recipe.add_argument("--out", type=Path, help="导出 JSON，不覆盖已有文件")
     ingest = sub.add_parser("ingest", help="将明确列出的历史材料导入为待审经验")
     ingest.add_argument("paths", nargs="+", type=Path)
     ingest.add_argument("--out", required=True, type=Path)
@@ -116,9 +120,21 @@ def main(argv: list[str] | None = None) -> int:
                               "当前实验": state.get("active_trial"), "最佳候选": state.get("best"),
                               "停止原因": state.get("stop_reason")}, ensure_ascii=False, indent=2))
         elif args.command == "knowledge":
+            if args.limit < 1:
+                raise KSEOError("--limit 必须至少为 1")
             context = read_json(args.context)
             cards = [card for card in load_cards(args.extra) if card.get("status") != "NEEDS_REVIEW"]
-            print(json.dumps(retrieve(context, cards), ensure_ascii=False, indent=2))
+            print(json.dumps(retrieve(context, cards, args.limit), ensure_ascii=False, indent=2))
+        elif args.command == "recipe":
+            from .recipes import catalog, load_recipe
+            value = load_recipe(args.name) if args.name else catalog()
+            if args.out:
+                if args.out.exists():
+                    raise KSEOError("输出文件已存在，拒绝覆盖")
+                write_json(args.out, value)
+                print(f"经验 recipe 已导出：{args.out}；真实部署和验收仍须接入 adapter。")
+            else:
+                print(json.dumps(value, ensure_ascii=False, indent=2))
         elif args.command == "ingest":
             count = import_materials(args.paths, args.out)
             print(f"已导入 {count} 条待审经验：{args.out}；补齐适用条件并审查后才能进入自动检索。")

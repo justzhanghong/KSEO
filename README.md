@@ -112,14 +112,18 @@ kseo validate ./runs/model-001/task.json \
 
 ## 经验转换
 
-工程内置 9 张经过脱敏的历史经验卡，保留成功、失败、无效测量、部署失败和待验证假设的差别。模型特定规则只有在结构、硬件和能力条件匹配时才进入检索。
+工程保留原有 9 张代表性经验卡，新增 V4.1-Flash 专项经验包：11 条现行规则和 17 张历史案例，覆盖零缓存命中、单 shape warmup、长度/并发曲线、Feature 选层、输出相似度退役、双 metrics、usage 四字段、Router 与全局限流，以及 1200 纯文本/图文回放。模型特定规则只有在结构、硬件和能力条件匹配时才进入检索。
 
 ```bash
 kseo knowledge --context your-context.json
+kseo recipe deepseek-v4.1-flash --out ./v41-experience.json
+kseo knowledge --context examples/knowledge/v41-context.json --limit 40
 kseo ingest /path/to/task.md /path/to/acceptance.json --out imported.json
 ```
 
 `ingest` 建立 `NEEDS_REVIEW` 卡片，做基础脱敏，不会把历史 PASS 自动当作新任务成功。补齐适用条件、来源和迁移限制并审查后，才能接入自动检索。见 [流程与经验迁移](docs/conversion.md)。
+
+V4.1 的 Agent 请求会完整收到 `model_recipe` 中的现行规则，历史案例再按 top-k 检索。2048-token 含义、并发增长阈值和计时口径中的未明确项均保留为待确认，不能自动判 PASS。详见 [V4.1-Flash 优化经验](docs/models/deepseek-v4.1-flash.md)。经验包尚未替代真实部署、warmup 审计和 Feature 采集 adapter。
 
 ## 验证
 

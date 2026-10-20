@@ -32,7 +32,7 @@ Markdown 可以继续承担目标解释、实验叙述和经验说明。影响�
 
 ## 内置经验
 
-第一批转换了 9 张代表性经验卡：
+原有 9 张代表性经验卡保留：
 
 - Flash async 与 DSpark 方案的历史验收。
 - GLM-5.2 的 IndexShare、MTP 与 RDMA 联合优化。
@@ -45,6 +45,15 @@ Markdown 可以继续承担目标解释、实验叙述和经验说明。影响�
 - 会话隔离事故的初步假设与证据限制。
 
 数据位于 `src/kseo/data/experience.json`。卡片保留模型结构、SM、拓扑和语义条件，移除了内部主机、账号、绝对路径及原始运维日志。历史摘要不是本项目新跑的 GPU 测量。
+
+当前优先深化 V4.1-Flash，新增 11 条现行规则与 17 张历史案例，位于 `data/experience-v41.json`，通过 `data/recipes.json` 注册。见 [V4.1-Flash 优化经验](models/deepseek-v4.1-flash.md)。现行规则作为完整 `model_recipe` 进入 Agent 请求，历史案例再按条件和 top-k 检索，避免硬件特定的旧建议挤掉当前测量原则。其他模型后续独立补充经验包。
+
+```bash
+kseo recipe
+kseo recipe deepseek-v4.1-flash --out ./v41-experience.json
+```
+
+recipe 是经验与测量规则，不是完整可执行 TaskSpec。来源状态、合同版本、待明确阈值和需要的后端证据均明确保存；不能把导出成功解释为对应 GPU 验收已经实现或通过。
 
 ## 增量导入
 

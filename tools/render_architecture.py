@@ -55,11 +55,11 @@ def architecture():
                             (1010, "优化目标与预算", "TTFT / TPOT / 吞吐 / 质量")]:
         svg.card(x, 163, 330, 90, title, [line])
     for x, title, line in [(290, "System Workflow", "基线、迭代、最终复验与交付"),
-                            (650, "Strategy Router", "配置优先；按当前热点与收益路由"),
+                            (650, "Strategy Router", "配置优先：按最大瓶颈点与收益路由"),
                             (1010, "E2E Integrator", "集成、验收、最佳方案与回退")]:
         svg.card(x, 363, 330, 90, title, [line])
     cards = [(290, "Configuration", ["flags / env / backend", "有限搜索 → 参数候选", "返回配置与可检验假设"]),
-             (650, "Scheduling", ["host / 通信 / 调度", "热点分析 → 可回退候选", "返回参数或源码 patch"]),
+             (650, "Scheduling", ["host / 通信 / 调度", "瓶颈分析 → 可回退候选", "返回参数或源码 patch"]),
              (1010, "Kernel", ["真实调用提取 → 冻结 oracle", "局部正确性与性能验证", "返回 patch 与独立证据"])]
     for x, title, lines in cards:
         svg.card(x, 565, 330, 195, title + " Workflow", lines, fill="#ffffff", size=21)
@@ -75,8 +75,8 @@ def architecture():
 
 def system_flow():
     svg = SVG(1280, 490, "End-to-End Pipeline", "System 层大流程：候选生成、集成、评估和反馈分别归位")
-    nodes = [("环境与基线", ["能力与环境检查", "正确性基线"]), ("采集 Profile", ["当前源码与负载", "标准化热点"]),
-             ("诊断与路由", ["配置优先", "热点收益排序"]), ("调用子流程", ["Configuration", "Scheduling", "Kernel"]),
+    nodes = [("环境与基线", ["能力与环境检查", "正确性基线"]), ("采集 Profile", ["当前源码与负载", "定位瓶颈点"]),
+             ("诊断与路由", ["配置优先", "最大瓶颈点与收益"]), ("调用子流程", ["Configuration", "Scheduling", "Kernel"]),
              ("集成候选", ["隔离源码", "可逆 patch"]), ("E2E 验收", ["通过全部门禁", "再选择 best"]),
              ("最终复验与交付", ["新 trial 完整复验", "证据与复现包"])]
     for index, (title, lines) in enumerate(nodes):
@@ -110,14 +110,14 @@ def kernel_flow():
 def other_flows():
     svg = SVG(1280, 600, "Configuration / Scheduling Workflows", "这两类子流程负责提出候选；部署、测量和最终选择由 System 层统一完成")
     for y, title, labels in [(140, "Configuration 子流程", ["读取当前参数", "有限搜索空间", "去重与预算检查", "返回参数候选"]),
-                              (350, "Scheduling 子流程", ["读取当前热点", "形成可检验假设", "参数与 patch 约束检查", "返回可回退候选"])]:
+                              (350, "Scheduling 子流程", ["读取最大瓶颈点", "形成可检验假设", "参数与 patch 约束检查", "返回可回退候选"])]:
         svg.text(44, y, title, 23, bold=True)
         for index, label in enumerate(labels):
             x = 44 + index * 300
             svg.card(x, y + 28, 270, 80, label, size=20)
             if index < len(labels) - 1:
                 svg.arrow(f"M{x+270} {y+68} H{x+296}")
-    svg.text(44, 550, "Scheduling 承接 host、通信与调度；按当前 Profile 路由，历史经验作为辅助。", 18, color=MUTED)
+    svg.text(44, 550, "Scheduling 承接 host、通信与调度；按最大瓶颈点与收益路由，历史经验作为辅助。", 18, color=MUTED)
     svg.save("optimization-workflows.svg")
 
 

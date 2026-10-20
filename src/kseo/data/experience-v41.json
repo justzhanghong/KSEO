@@ -1,0 +1,1717 @@
+{
+  "schema_version": 1,
+  "kind": "model_experience_recipe",
+  "id": "deepseek-v4.1-flash",
+  "revision": "2026-10-20.2",
+  "model_family": "deepseek_v4_1",
+  "aliases": [
+    "deepseek_v4_1",
+    "deepseek_v4_1_flash",
+    "DeepSeek-V4.1-Flash",
+    "deepseek-ai/DeepSeek-V4.1-Flash",
+    "deepseek-v4.1-flash"
+  ],
+  "status": "REVIEWED_KNOWLEDGE_NOT_GPU_REVALIDATED",
+  "description": "先沉淀 V4.1-Flash 的测量规则、失败模式与迁移边界；不是完整部署 TaskSpec。",
+  "implementation_status": {
+    "knowledge_loading": "implemented",
+    "agent_policy_injection": "implemented",
+    "cache_zero_raw_validation": "implemented",
+    "real_single_node_deployment": "not_included",
+    "pd_deployment": "not_included",
+    "warmup_length_concurrency_feature_audit": "requires_backend_adapter_and_explicit_contract",
+    "metrics_messages_router_rate_limit": "requires_backend_adapter_and_explicit_contract",
+    "replay_1200_text_and_vision": "requires_backend_adapter_and_explicit_contract"
+  },
+  "precedence": [
+    "当前明确任务合同与本次用户规则；有冲突时显式处理，不能静默改写合同",
+    "现行 recipe 规则",
+    "带版本的历史合同与测量",
+    "历史根因假设、建议及本次 learned-experience"
+  ],
+  "rules": {
+    "V41-P01": {
+      "title": "正式速度开启 Prefix Cache，首 token 隔离并实证零命中",
+      "scope": "正式长度/并发速度测试；真实 warm-cache 功能及 KV offloading 命中率实验另立合同",
+      "source_ids": [
+        "U01",
+        "S03",
+        "S04"
+      ],
+      "length_labels": [
+        "50K",
+        "72K",
+        "144K",
+        "160K",
+        "256K"
+      ],
+      "concurrency_points": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "prefix_cache_enabled": true,
+      "cache_salt_allowed": false,
+      "cache_read_tokens_per_request": 0,
+      "procedure": [
+        "冻结原始 prompt、chat template、输出长度、提交顺序和实际 tokenizer/processor 身份。",
+        "只在测试端替换第一个用户内容 token；验证完整 rendered token IDs 仅一处改变，位置位于首个 cache block。",
+        "验证替换前后实际 token 总数相同，同批首个 cache block 身份互异；跨批复用同一变体时按合同 reset 并保存证据。",
+        "核对实际服务 Prefix Cache 已开启、请求无 cache_salt 或等价 namespace 注入，逐请求记录 cache read=0。",
+        "不得仅凭字符不同、token ID 不同或 reset 返回成功就认定零命中。",
+        "256K 等长度先核对真实输入、模板与输出预算不超过上下文容量；不支持时记录 BLOCKED，不截断、漏测或伪称通过。"
+      ],
+      "required_evidence": [
+        "tokenizer/chat-template 身份",
+        "变体 token diff 与首 block 身份",
+        "实际 runtime 开关",
+        "cache reset 证据（若使用）",
+        "逐请求 cache usage 与 token 计数"
+      ],
+      "enforcement": {
+        "existing_validator": "已重算并要求逐请求 cache_read_tokens=0；未知不能视为零",
+        "requires_adapter": [
+          "实际 Prefix Cache 开关",
+          "首 token/block 隔离",
+          "reset 与 tokenizer 证明"
+        ]
+      }
+    },
+    "V41-P02": {
+      "title": "只 Warmup 一个声明的 shape，检查其他 shape 的真实收益",
+      "source_ids": [
+        "U01",
+        "S01",
+        "S05",
+        "S06"
+      ],
+      "model_forward_warmup_count_per_service_start": 1,
+      "distinct_model_forward_warmup_shapes": 1,
+      "procedure": [
+        "在运行前声明唯一 model-forward warmup 的 shape、参数和位置，冻结基线/候选请求顺序。",
+        "触发 forward 的 smoke、maxlen/vision 检查和 profiler dry-run 也必须计入，或安排在正式计时之后。",
+        "不得通过对评测中的每个 shape 各自预热来掩盖 JIT、lazy initialization、autotune 或图/metadata 状态开销。",
+        "逐个比较非 warmup shape 与可比 Baseline；每个都须满足当前合同声明的收益条件，不能由总平均改善代替。",
+        "记录所有 rank 的 JIT/首次路径和请求历史；Prefix Cache reset 不代表运行时状态清空。"
+      ],
+      "required_evidence": [
+        "从启动开始的 forward ledger",
+        "唯一 warmup 声明",
+        "逐 shape Baseline/候选结果",
+        "rank 及 JIT/编译日志"
+      ],
+      "enforcement": {
+        "requires_adapter": [
+          "forward ledger 与启动期行为核对",
+          "逐 shape 收益比较"
+        ],
+        "note": "当前 recipe 提供规则，尚未自动审计真实服务 warmup。历史全 shape 预热建议不能覆盖本规则。"
+      }
+    },
+    "V41-P03": {
+      "title": "较短输入的 TTFT 不应反向超过较长输入",
+      "source_ids": [
+        "U01",
+        "S03",
+        "S18",
+        "S10"
+      ],
+      "scope": "同服务、同并发、同输出预算和同一计时口径；包括冻结 68 样本",
+      "comparison": "shorter_group_max_ttft <= longer_group_min_ttft",
+      "threshold_tokens": 2048,
+      "threshold_interpretation": "待确认：暂记录为两个样本的实际输入长度差，而非输入总长；未写为自动门禁",
+      "threshold_confirmation": "PENDING_USER_CLARIFICATION",
+      "timing_basis": "必须由当前合同明确选择 client TTFT 或 actual_prefill_s + decode_first_ms / 1000，不能混用",
+      "procedure": [
+        "按实际 tokenizer 长度分组，同长度不强排顺序。",
+        "保留全部样本和反向对；相同 warmup、cache 与提交顺序下对照 Baseline。",
+        "2048 的比较方向、允许容差和计时口径明确后才能生成自动门禁；不继承历史 4096/0.100s 或 4096/0.800s 作为本次默认。",
+        "服务端计时缺失时标记证据不足，不估算或用客户端时间替代。"
+      ],
+      "enforcement": {
+        "requires_adapter": [
+          "实际长度与逐请求/服务端时间证据"
+        ],
+        "automatic_gate_enabled": false
+      }
+    },
+    "V41-P04": {
+      "title": "检查 C1 到 C4 的 TTFT/TPOT 是否突增",
+      "source_ids": [
+        "U01",
+        "S04",
+        "S11"
+      ],
+      "concurrency_points": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "metrics": [
+        "ttft_ms",
+        "tpot_ms"
+      ],
+      "max_adjacent_growth_ratio": null,
+      "max_growth_acceleration": null,
+      "procedure": [
+        "固定输入与输出 token 数、服务配置、缓存策略和提交方式。",
+        "同时保留逐请求、mean、max/p95 及相邻并发档增长率；改善的单一档位不能替代整条曲线。",
+        "突增时检查 active request set、prefill/decode phase、同步、PP 传输、排队、KV 与内存压力。",
+        "未提供缓慢增长的数值阈值时列为诊断项，不能编造倍率、仅因微小非单调变化拒绝，或宣称已通过平滑性硬门禁。"
+      ],
+      "enforcement": {
+        "requires_adapter": [
+          "同步起跑证据与逐请求时间"
+        ],
+        "requires_contract_threshold": true,
+        "default": "DIAGNOSTIC_NOT_AUTOMATIC_PASS"
+      }
+    },
+    "V41-P05": {
+      "title": "Feature 选择首个 MoE Layer 的下一层输入",
+      "source_ids": [
+        "U01",
+        "S01",
+        "S19"
+      ],
+      "activation": "仅在当前合同明确启用 Feature 相似度测试时适用；不自动恢复 v3 已退役门禁",
+      "hook": {
+        "indexing": "语言模型全局 zero-based Layer",
+        "formula": "first_layer_containing_moe + 1",
+        "tensor": "layer_input_prenorm",
+        "example": "Layer_0 包含首个 MoE 时，取 Layer_1 输入"
+      },
+      "procedure": [
+        "从实际模型结构与 forward 路径定位第一个包含 MoE 的 Layer，保存模块路径证据。",
+        "不要把 VL wrapper、PP rank-local 层号或经验中的 Layer_1 字符串当成通用规则。",
+        "冻结 input/output、pre/post-norm、dtype、采样位置与 reference 身份；候选和 Baseline 完全一致。",
+        "首个 MoE 不存在、下一层不存在或 hook 无法证明时 BLOCKED，不悄悄改选其他张量。",
+        "相似度阈值和重复次数取当前合同；不把历史 0.99 或最大 3x3 比较自动提升为新默认。"
+      ],
+      "enforcement": {
+        "requires_adapter": [
+          "实际模型结构解析",
+          "tensor capture 与 reference 比较"
+        ],
+        "automatic_gate_enabled": false
+      }
+    },
+    "V41-P06": {
+      "title": "不以模型输出文本相似度作为验收门禁",
+      "source_ids": [
+        "U01",
+        "S19",
+        "S16"
+      ],
+      "output_text_similarity_gate_enabled": false,
+      "procedure": [
+        "不要求输出文本相似度，不把空字符串直接计为相似度零而拒绝候选。",
+        "不得把这个规则扩展为停用 Feature、GSM8K、算子/reference、API 语义或请求完成性验收。",
+        "区分 final content 为空但 reasoning/tool 输出有效，与整个流均无有效生成内容。后者仍按业务/协议门禁处理。",
+        "保留实际 token、finish reason、失败和不可解析样本；HTTP200 或 completion_tokens 非零不能单独证明有效响应。"
+      ],
+      "enforcement": {
+        "recipe": "禁用该相似度门禁",
+        "requires_adapter": [
+          "实际 reasoning/content/tool 流与质量/协议判断"
+        ],
+        "note": "现有合同不会被 recipe 静默改写；接入时须删除旧文本相似度 gate。"
+      }
+    },
+    "V41-P07": {
+      "title": "对外暴露等价的 /metrics 和 /v1/metrics",
+      "source_ids": [
+        "U02",
+        "S21",
+        "S23",
+        "S27"
+      ],
+      "public_paths": [
+        "/metrics",
+        "/v1/metrics"
+      ],
+      "required_metrics": [
+        "TTFT",
+        "TPOT 或声明等价口径的 decode latency",
+        "Running",
+        "Waiting"
+      ],
+      "procedure": [
+        "从对外 endpoint 分别访问两个路径，确认状态、格式、鉴权和指标语义等价；动态采样值允许随时间变化，不要求字节完全相同。",
+        "冻结指标名称、类型、labels、单位及采样口径；Running/Waiting 是实际推理请求状态，不是平台 training 状态。",
+        "TTFT 与 decode latency 记录真实样本，load 后 histogram count 应增加，Running 在负载中可观测为正，Waiting 即使为零也不能缺失。",
+        "历史 vLLM 暴露 inter-token latency/ITL，若映射为 TPOT 必须说明是否与逐请求 (total_ms-ttft_ms)/(output_tokens-1) 等价；不能只改名称。",
+        "upstream metrics 失败应如实返回明确错误，不以空文本 HTTP200 伪造健康指标。"
+      ],
+      "required_evidence": [
+        "两个外部路径在 idle/load/completed 的 scrape",
+        "Prometheus 解析结果",
+        "指标映射与单位",
+        "请求原始时间和计数增量",
+        "上游失败响应"
+      ],
+      "enforcement": {
+        "requires_adapter": [
+          "双路径 HTTP 路由与实际 metrics 抓取/比对"
+        ],
+        "implemented_by_recipe": false
+      }
+    },
+    "V41-P08": {
+      "title": "Messages usage 四字段与缓存命中率必须口径一致",
+      "source_ids": [
+        "U02",
+        "S03",
+        "S21",
+        "S24"
+      ],
+      "endpoint": "/v1/messages",
+      "endpoint_note": "用户原文 /v1/message；现有正式协议为 /v1/messages，若另暴露单数兼容路径，也须使用相同 usage 语义。",
+      "usage_fields": {
+        "input_tokens": "本 V4.1 自动 Prefix Cache 合同中的未读缓存输入 token 数，等于 server_prompt_tokens - cache_read_input_tokens；不是完整 prompt 总数。",
+        "output_tokens": "实际生成的输出 token 数，包含后端按合同计入的 reasoning/tool 生成，不能用 max_tokens 或字符数冒充。",
+        "cache_creation_input_tokens": "后端明确报告的独立 cache creation token 计数；自动 Prefix Cache 没有该独立计数时为 0，不能把 cache miss 数伪造成新建数。",
+        "cache_read_input_tokens": "本请求实际从 cache 读取的输入 token 数，不能用本次写入量、预估量或 usage 缺失来填零。"
+      },
+      "accounting_mode": "v41_automatic_prefix",
+      "server_prompt_formula": "input_tokens + cache_read_input_tokens",
+      "cache_hit_rate_formula": "cache_read_input_tokens / (input_tokens + cache_read_input_tokens)",
+      "procedure": [
+        "四项均为非 boolean 的非负整数，0 <= cache_read <= 实际完整 prompt tokens；与原生 tokenizer/template/tools/vision 展开计数一致。",
+        "本 V4.1 历史合同 input 已含未命中输入，creation 是独立报告项，不能再次相加或扣减而重复计数。其他后端若采用三段互斥计费，必须显式声明另一合同，不静默混用。",
+        "流式 message_start/message_delta 等携带 usage 的事件与最终汇总语义一致；非流式同样校验，不能丢掉累计 cache 字段。",
+        "以 cold/warm/reset-control、同图和不同图的真实请求核对 usage 与服务端缓存计数；缺少真实 cache read 证据时标为无法验收。",
+        "正式速度零命中与功能 warm-cache 正命中分别验收，不能用固定四个数字冒充正确。"
+      ],
+      "required_evidence": [
+        "原始流式与非流式响应",
+        "后端完整 prompt/output/cache 计数",
+        "字段语义合同",
+        "cold/warm/control 对照"
+      ],
+      "enforcement": {
+        "requires_adapter": [
+          "Messages endpoint、SSE usage 与真实缓存计数采集"
+        ],
+        "implemented_by_recipe": false
+      }
+    },
+    "V41-P09": {
+      "title": "Router 拒绝超长输入，裁剪可容纳输入的输出预算",
+      "source_ids": [
+        "U02",
+        "S20",
+        "S22"
+      ],
+      "input_count": "实际 tokenizer + chat template + tools + 原生多模态 processor 展开后的完整 prompt tokens",
+      "reject_condition": "prompt_tokens > max_model_len",
+      "clip_condition": "prompt_tokens < max_model_len and prompt_tokens + requested_max_output_tokens > max_model_len",
+      "effective_output_formula": "min(requested_max_output_tokens, max_model_len - prompt_tokens)",
+      "input_equal_limit": "没有至少一个生成 token 的空间时明确返回当前 API 合同规定的输入/输出容量错误；不截断输入、不返回负预算，也不假装可正常生成。",
+      "procedure": [
+        "先解析与实际计数，再做上下文校验/输出裁剪，最后用裁剪后预算做 admission reservation。",
+        "输入已超过最大上下文时在模型 forward/入队前拒绝，返回实际值、最大值与明确错误。",
+        "输入可容纳但总预算越界时保留完整输入，将输出上限缩至剩余空间并正常调用上游；不能将它误判为输入过长或限流。",
+        "覆盖小于、等于、大于最大上下文，以及输入可容纳时 input+output 等于和大于边界；保存实际发往上游的 effective_max_tokens。"
+      ],
+      "required_evidence": [
+        "真实完整 prompt 计数",
+        "requested 与 effective output 预算",
+        "拒绝请求零 upstream forward",
+        "裁剪请求正常响应与实际输出长度",
+        "裁剪后 reservation"
+      ],
+      "enforcement": {
+        "requires_adapter": [
+          "Router native tokenization、预算裁剪及 admission 集成"
+        ],
+        "implemented_by_recipe": false
+      }
+    },
+    "V41-P10": {
+      "title": "按全局请求数/token 总量限流，不增加图片尺寸或格式限制",
+      "source_ids": [
+        "U02",
+        "S20",
+        "S22",
+        "S25",
+        "S26"
+      ],
+      "outstanding_requests_formula": "running_requests + admitted_waiting_requests",
+      "request_reserved_tokens_formula": "server_prompt_tokens + effective_max_output_tokens",
+      "max_outstanding_requests": null,
+      "max_reserved_tokens": null,
+      "gateway_image_width_limit": null,
+      "gateway_image_height_limit": null,
+      "gateway_image_pixel_limit": null,
+      "gateway_image_format_allowlist": null,
+      "procedure": [
+        "所有推理 endpoint 共用 admission 账本，统计已接纳且未完成的 running+waiting；health/metrics scrape 不占推理名额。",
+        "按真实完整输入与裁剪后输出预算预留 token；缓存命中的输入仍计入，支持多候选时按实际最大占用预留。",
+        "原子地检查请求数和聚合 token 两个上限；上限与拒绝状态码取当前合同，不自动复制历史 16 请求/4M token 默认。",
+        "正常、错误、timeout、断连、取消、网关异常均需先终止/关闭上游，再恰好释放一次；拒绝请求不分配也不 release。",
+        "不限制单张图片高、宽、像素数，不额外设置格式白名单；合法且运行时可解码/处理的图片走原生 processor 并按真实视觉 token 计入上下文和限流。",
+        "损坏 base64、无法解码或协议非法仍返回真实输入错误；模型确实不支持的能力须明确报告，不能伪装成自设图片尺寸/格式限流。",
+        "不继承旧的 1920x1080、2,073,600 像素、10 张图片等为现行默认；不为通过测试而丢图、私自缩图、替换图片或降低输入语义。"
+      ],
+      "required_evidence": [
+        "全局 admission/reservation/release 事件与 request_id",
+        "高水位与结束归零",
+        "上下限及跨 endpoint 竞争",
+        "超过旧尺寸与多种可解码格式的合法正例",
+        "失败/断连/取消释放测试"
+      ],
+      "enforcement": {
+        "requires_adapter": [
+          "全局 admission 与上游生命周期",
+          "原生多模态计数与协议校验"
+        ],
+        "implemented_by_recipe": false
+      }
+    },
+    "V41-P11": {
+      "title": "必须回放 1200 纯文本，图文模型另回放 1200 随机插图样本",
+      "source_ids": [
+        "U03",
+        "S20",
+        "S03"
+      ],
+      "text_replay_requests": 1200,
+      "vision_replay_requests_if_capable": 1200,
+      "vision_condition": "实际模型结构、processor 和 forward 支持图文；不能人为关闭 vision 后跳过",
+      "image_count_sampling": {
+        "distribution": "由当前测试合同声明",
+        "min_images": 1,
+        "max_images": null,
+        "seed": null,
+        "frozen_before_measuring": true,
+        "counts_are_api_limits": false
+      },
+      "concurrency": null,
+      "success_rate_threshold": null,
+      "procedure": [
+        "冻结完整 1200 条纯文本 source_id、顺序、请求内容、负载 SHA256 和首轮尝试；不得只跑子集或以少量 smoke 替代。",
+        "具备图文能力时再执行完整 1200 条图文回放；可基于同一 1200 文本 source_id 随机插图，以保留配对关系。",
+        "测试前声明随机图片数的分布/范围与 seed，冻结每条样本的图片数量、图片 SHA256、顺序、格式及实际尺寸；基线/候选复用同一 manifest。",
+        "图文回放每条至少包含一张有效图片，并证明实际进入 vision processor/encoder 路径；随机图片数的测试范围不是 API 人为限制。",
+        "在 P10 不新增尺寸、像素和格式限制的前提下使用真实图片；完整 token 计数、上下文和 admission 仍按 P08-P10 处理。",
+        "分别报告两轮的成功/失败、错误类别、有效生成、timeout、崩溃/重启、延迟和 admission 释放情况；失败保留在分母，重试单列不能覆盖首次结果。",
+        "回放并发、成功率、时限与其他稳定性门槛须由当前合同明确；执行完 1200 条不能自动宣布稳定性 PASS。",
+        "纯文本模型可凭实际能力证据将图文轮标记 NOT_APPLICABLE；本条不要求额外第三轮，也不复制旧任务的样本阈值为默认。"
+      ],
+      "required_evidence": [
+        "两轮各 1200 条完整 manifest 与首轮尝试结果",
+        "随机分布/seed 和每条图片身份",
+        "实际 vision 执行",
+        "服务/镜像身份与重启监控",
+        "admission/usage、延迟和异常统计"
+      ],
+      "enforcement": {
+        "requires_adapter": [
+          "数据回放",
+          "随机插图与 manifest 冻结",
+          "vision 路径验证与稳定性重算"
+        ],
+        "implemented_by_recipe": false
+      }
+    }
+  },
+  "history_policy": [
+    {
+      "scope": "v1/v2",
+      "prefix_cache": "历史正式速度多为 off",
+      "feature": "当时有独立 Feature 门禁",
+      "output_similarity": "当时可能要求输出相似度；仅作历史背景"
+    },
+    {
+      "scope": "v3",
+      "prefix_cache": "on、无 salt、首 token 隔离、逐请求零命中",
+      "feature": "历史后期退役，不自动复活",
+      "output_similarity": "退役；本次用户也明确不验收"
+    },
+    {
+      "scope": "68 样本历史规则",
+      "changes": [
+        "严格长度顺序",
+        "4096-token / 0.100s 允许波动",
+        "后续任务书为 4096-token / 0.800s，且要求服务端合成时间"
+      ],
+      "current": "本次 2048-token 语义仍需确认，不继承历史容差为默认"
+    },
+    {
+      "scope": "旧 API 图像验收",
+      "changes": [
+        "曾要求最多 10 图、宽<=1920、高<=1080、像素<=2,073,600"
+      ],
+      "current": "由 V41-P10 覆盖：不新增单图宽高/像素限制或格式白名单，不默认继承旧图片数量限制"
+    },
+    {
+      "scope": "旧 admission 与稳定性",
+      "historical": "曾固定 16 请求、4M token、并发 16 与成功率 >=80%，图文随机 1-10 图",
+      "current": "1200 纯文本必跑；图文模型另跑 1200 随机插图，其他数值按当前明确合同，不作通用默认"
+    }
+  ],
+  "workflow_guidance": {
+    "System": [
+      "冻结当前规则与证据口径；分别记录协议有效、阶段通过、整体通过及最终镜像通过",
+      "检查全部长度/并发与 68 样本，不用局部 PASS 替代完整验收",
+      "验收双 metrics、usage、Router/admission，再执行 1200 纯文本和条件性的 1200 图文稳定性回放"
+    ],
+    "Configuration": [
+      "先核对模型能力、PP 跨层依赖和实际 runtime；不因搜索而悄悄关闭 prefix cache、thinking 或质量链路"
+    ],
+    "Scheduling": [
+      "同时分析 TTFT/TPOT 的 C1-C4 曲线与 prefill/decode phase，按当前门槛重测"
+    ],
+    "Kernel": [
+      "在单 shape warmup 下检查未见长度、尾块、alignment 与 PP0 入口路径",
+      "局部正确性和加速后，仍做跨 shape 与 E2E 验收"
+    ],
+    "API": [
+      "P07-P11 是当前有效规则；不继承旧图片限制",
+      "完整原生 prompt -> 上下文判断 -> 输出裁剪 -> 全局 reservation -> 上游执行 -> 恰好释放一次",
+      "真实 API/稳定性结果需后端证据，recipe 和历史单测不能替代服务验收"
+    ]
+  },
+  "open_parameters": [
+    "2048 是实际输入长度差还是输入总长，以及是否包含边界",
+    "C1-C4 缓慢增长的具体倍率/加速度阈值",
+    "当前 TTFT 口径、逐 shape 收益定义和 Feature 启用/阈值",
+    "全局并发请求数与 token 额度，以及拒绝响应合同",
+    "图文回放随机图片数的分布/上界/seed、回放并发和稳定性阈值"
+  ],
+  "sources": [
+    {
+      "id": "S01",
+      "filename": "flash41_speed_up_v1.md",
+      "sha256": "0edc43bcd28d6aa645a95c692c55134d5724073a9dab6d9627d26091acc526cb",
+      "type": "historical_contract",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S02",
+      "filename": "flash41_speed_up_v2.md",
+      "sha256": "603afc76fc179811b11230b824417c1ddae77e6e57445363d9e20f0b988b1ab2",
+      "type": "historical_contract",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S03",
+      "filename": "flash41_speed_up_v3.md",
+      "sha256": "f6be01e983f6a9b36fef66faf6825ad8f0683a6aecec299d656ecebe18f19be8",
+      "type": "historical_contract",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S04",
+      "filename": "flash41_speed_up_v2_api_1st/reports/speed_first_token_retest.md",
+      "sha256": "75d488e7b1687eb434986b8223f538245247cb628eb018d3c1117c9f59896952",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S05",
+      "filename": "flash41_speed_up_v3/handoff/agent_handoff_20260918_exp015_108k_warmup.md",
+      "sha256": "b8ad871709600ac5709e058850fdbbf35cd7458721ba70b743b63a162e7fdafd",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S06",
+      "filename": "flash41_speed_up_v3/reports/summary/performance_current_v41_mhc_warmup_exp008_rejection.json",
+      "sha256": "4d3bdddca17a3c32eb33f4f0f80ded4ddf0422a62ffd43f0d606830333450315",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S07",
+      "filename": "flash41_speed_up_v3/reports/qa/performance_dynamic_mqa_context_exp016_jit_rejection_9255.json",
+      "sha256": "15d7ebf0874bf089b69c65473b2ad2b2e7cbdfda678c2125f640921599f442a6",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S08",
+      "filename": "flash41_speed_up_v3/reports/qa/performance_length_general_sparse_exp017_jit_rejection_9260.json",
+      "sha256": "fd38cc7cd73156e3459a84e1e92aa8c171567b2d78f510d953d6915cc5a93292",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S09",
+      "filename": "flash41_speed_up_v3/reports/qa/performance_full_matrix_exp019_speed68_rejection_9265.json",
+      "sha256": "32b02badc465bd7cc15e9b93b17aa395ddff74d3ae599de270bafe49942af39b",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S10",
+      "filename": "flash41_speed_up_v3/reports/qa/performance_effective_ttft_exp023_reclassification_9278.json",
+      "sha256": "826698b962fa8d98e998a4b1e8fc99536660ed3c1decfeeb2cc2ca38b7ade623",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S11",
+      "filename": "flash41_speed_up_v3/reports/summary/performance_full_batch_rotation_exp004_stage1_pass.json",
+      "sha256": "91ebcb75609e32fb1c355ed7ca91fbc8539b23c1e1aa57bf4d5964dbb26440e9",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S12",
+      "filename": "flash41_speed_up_v1/reports/qa/v2_grouped_projection_r052_gsm_rejection.json",
+      "sha256": "3353214b81fdad75c5319163dd8291fc327c15187103ea930188a5c2e2c96810",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S13",
+      "filename": "flash41_speed_up_v1/reports/summary/v2_final_acceptance.json",
+      "sha256": "acec7c4ad4cba79fae8d8c647e185b91d1c2bf77b90482f6d54880351505afe5",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S14",
+      "filename": "flash41_speed_up_v3/reports/summary/candidate_exp028_acceptance.json",
+      "sha256": "4155853c0c38ced8b174238786568577ab280509dd5060c601acf54c64a64658",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S15",
+      "filename": "flash41_speed_up_v3/reports/qa/kv_offloading_exp030_r32_original1200_acceptance_9416.json",
+      "sha256": "c976211ac799e657efe527e1b3783ddd4a00bae352fac8dd0816428b51a3f921",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S16",
+      "filename": "flash41_speed_up_v3/reports/qa/kv_offloading_exp030_r32_speed68_rejection_9417.json",
+      "sha256": "beda43cbdcad6edb73d0dd3a7dd26431cf53bb73ae32a0243710ae84a63a222c",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S17",
+      "filename": "flash41_speed_up_v1/autoresearch_results.tsv",
+      "sha256": "75219e5a1c76ef40f3038987b5e3449e82f78f4c1efae573f9a5a4650dd033f5",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S18",
+      "filename": "flash41_speed_up_v3/reports/qa/speed68_adjacent_fluctuation_rule_20260920.json",
+      "sha256": "359625c551dd7f55bfcbb9530a052bdc116ea97604e36300e52c98d7298cda5c",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S19",
+      "filename": "flash41_speed_up_v3/reports/qa/similarity_gates_retirement_20260920.json",
+      "sha256": "c67c2d84fa225cf0794f7a9c140fc7a4845229807bc8dd3d1d6badf631fdb6cb",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S20",
+      "filename": "flash41_speed_up_v2_api_1st.md",
+      "sha256": "73d3ddfc843204c67f1ab3cbaafa83b0c4ca537fecb0e40bdd2075db15616887",
+      "type": "historical_contract",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S21",
+      "filename": "flash41_speed_up_v2_api_1st/contracts/api-and-prefix-cache.md",
+      "sha256": "c9eda2bccf8133bfbdc9083ea747f80ff8a3ee981976e14d013772eedebb771a",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S22",
+      "filename": "flash41_speed_up_v2_api_1st/contracts/service-contract-and-rate-limit.md",
+      "sha256": "c1018c53f682d532aa585e4c6fd9ffd9eeca3eccaf4c3e6d3ca7694ac8e4914f",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S23",
+      "filename": "flash41_speed_up_v2_api_1st/configs/metrics_contract.json",
+      "sha256": "36a0a36fc7c60bb118264d1695e3f0f03d8400a55ea6dcf810218d9843c4cb6e",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S24",
+      "filename": "flash41_speed_up_v3/reports/qa/gateway_messages_usage.json",
+      "sha256": "17400141716de78337092069c6d86feafa4d1e821c7f5795688441ea2c129d4b",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S25",
+      "filename": "flash41_speed_up_v3/reports/qa/gateway_admission_lifecycle.json",
+      "sha256": "8d3ff5d8ce6496c7add67d6b9aa299ae74ad03f9d20f179fd24aafc20d3b3143",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S26",
+      "filename": "flash41_speed_up_v3/reports/qa/gateway_image_validation_exp023.json",
+      "sha256": "80a51b4637a288b14441d5ca5142a45707307bef98adc00146bcd5ceb4c49cdd",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "S27",
+      "filename": "flash41_speed_up_v3/reports/qa/gateway_metrics_proxy.json",
+      "sha256": "58cbb4c6d1210ffb392082545810ad2d52d7ee23ba069d87319f2ce281e12468",
+      "type": "historical_report_or_index",
+      "review": "已阅读相关合同、结论或索引；未重新执行 GPU 测量或逐项重审全部 raw"
+    },
+    {
+      "id": "U01",
+      "type": "current_user_instruction",
+      "date": "2026-10-20",
+      "sha256": "7177d3a4d19a5928e3d463f6d8e35caac908933ad0276e575c42707adebdd0fd",
+      "hashed_content": "以下六条原文按换行连接，无结尾换行",
+      "statements": [
+        "测试不同输入长度（50K/72K/144K/160K/256K）不同并发的推理速度时，开启Prefix-Cache，通过修改首token来保证cache-hit等于0。",
+        "关于shape warmup，只能Warmup一个shape，然后在其他shape上都必须有收益。",
+        "且更小的shape（阈值为2048 token），TTFT不能比更大的shape耗时长，例如，68样本速度测试。",
+        "从1并发到4并发，TTFT和TPOT都应该缓慢增长，如果急速增长，说明并发优化有问题。",
+        "feature相似度测试时，选择原则是首个包含MoE模块的下一个Layer的输入，例如，Layer_0包含MoE，则使用Layer_1的输入计算相似度。",
+        "模型输出文本相似度，不必验收，因为有时候输出会为空，导致相似度直接归零。"
+      ]
+    },
+    {
+      "id": "U02",
+      "type": "current_user_instruction",
+      "date": "2026-10-20",
+      "sha256": "0c2e2c867b90ae23d962fca722d3e1b7ba67cbf646962a59487929e739c4fc4c",
+      "hashed_content": "以下四条 API 原文按换行连接，无结尾换行",
+      "statements": [
+        "API验收：/metrics要返回类似TTFT/TPOT/Running/Waiting等信息，同时对外暴露功能等价的/metrics和/v1/metrics。",
+        "缓存命中率相关：/v1/message usage返回缓存命中相关字段，注意四个字段的含义。",
+        "Router设计逻辑：输入超过最大上下文直接拒绝请求；输入小于最大上下文，但输入+输出大于最大上下文则裁剪输出预算，且正常返回结果。",
+        "限流设计：限制队列内请求的并发数、token总量，但不限制单张图片高宽以及像素个数、也不私自限制图像格式。"
+      ]
+    },
+    {
+      "id": "U03",
+      "type": "current_user_instruction",
+      "date": "2026-10-20",
+      "sha256": "d5f57ef1fff5e355055c13146abbbdfa194a6c05d372c56a86605b371e92e8f0",
+      "hashed_content": "以下稳定性原文，无结尾换行",
+      "statements": [
+        "稳定性测试：1200纯文本必须回放；如果是图文模型，必须回放1200图文样本（回放时随机插入图片数）。"
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "id": "V41-P01",
+      "title": "正式速度开启 Prefix Cache，首 token 隔离并实证零命中",
+      "status": "CURRENT_USER_POLICY",
+      "priority": 100,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "2026-10-20 用户明确提出的测量或验收原则；这是现行规则，不是本工程新跑的 GPU 结论。"
+      ],
+      "transfer_hypothesis": "按 recipe.rules 中的 procedure 与 evidence 接入，规则优先于旧实验建议。",
+      "rule_id": "V41-P01",
+      "source_ids": [
+        "U01",
+        "S03",
+        "S04"
+      ],
+      "limits": [
+        "未补齐的阈值和实际后端证据不能视为验收通过。"
+      ],
+      "provenance": "用户当前指令与列出的历史合同/报告；来源 SHA256 见 sources。"
+    },
+    {
+      "id": "V41-P02",
+      "title": "只 Warmup 一个声明的 shape，检查其他 shape 的真实收益",
+      "status": "CURRENT_USER_POLICY",
+      "priority": 100,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "2026-10-20 用户明确提出的测量或验收原则；这是现行规则，不是本工程新跑的 GPU 结论。"
+      ],
+      "transfer_hypothesis": "按 recipe.rules 中的 procedure 与 evidence 接入，规则优先于旧实验建议。",
+      "rule_id": "V41-P02",
+      "source_ids": [
+        "U01",
+        "S01",
+        "S05",
+        "S06"
+      ],
+      "limits": [
+        "未补齐的阈值和实际后端证据不能视为验收通过。"
+      ],
+      "provenance": "用户当前指令与列出的历史合同/报告；来源 SHA256 见 sources。"
+    },
+    {
+      "id": "V41-P03",
+      "title": "较短输入的 TTFT 不应反向超过较长输入",
+      "status": "CURRENT_USER_POLICY",
+      "priority": 100,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "2026-10-20 用户明确提出的测量或验收原则；这是现行规则，不是本工程新跑的 GPU 结论。"
+      ],
+      "transfer_hypothesis": "按 recipe.rules 中的 procedure 与 evidence 接入，规则优先于旧实验建议。",
+      "rule_id": "V41-P03",
+      "source_ids": [
+        "U01",
+        "S03",
+        "S18",
+        "S10"
+      ],
+      "limits": [
+        "未补齐的阈值和实际后端证据不能视为验收通过。"
+      ],
+      "provenance": "用户当前指令与列出的历史合同/报告；来源 SHA256 见 sources。"
+    },
+    {
+      "id": "V41-P04",
+      "title": "检查 C1 到 C4 的 TTFT/TPOT 是否突增",
+      "status": "CURRENT_USER_POLICY",
+      "priority": 100,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "2026-10-20 用户明确提出的测量或验收原则；这是现行规则，不是本工程新跑的 GPU 结论。"
+      ],
+      "transfer_hypothesis": "按 recipe.rules 中的 procedure 与 evidence 接入，规则优先于旧实验建议。",
+      "rule_id": "V41-P04",
+      "source_ids": [
+        "U01",
+        "S04",
+        "S11"
+      ],
+      "limits": [
+        "未补齐的阈值和实际后端证据不能视为验收通过。"
+      ],
+      "provenance": "用户当前指令与列出的历史合同/报告；来源 SHA256 见 sources。"
+    },
+    {
+      "id": "V41-P05",
+      "title": "Feature 选择首个 MoE Layer 的下一层输入",
+      "status": "CURRENT_USER_POLICY",
+      "priority": 100,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "2026-10-20 用户明确提出的测量或验收原则；这是现行规则，不是本工程新跑的 GPU 结论。"
+      ],
+      "transfer_hypothesis": "按 recipe.rules 中的 procedure 与 evidence 接入，规则优先于旧实验建议。",
+      "rule_id": "V41-P05",
+      "source_ids": [
+        "U01",
+        "S01",
+        "S19"
+      ],
+      "limits": [
+        "未补齐的阈值和实际后端证据不能视为验收通过。"
+      ],
+      "provenance": "用户当前指令与列出的历史合同/报告；来源 SHA256 见 sources。"
+    },
+    {
+      "id": "V41-P06",
+      "title": "不以模型输出文本相似度作为验收门禁",
+      "status": "CURRENT_USER_POLICY",
+      "priority": 100,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "2026-10-20 用户明确提出的测量或验收原则；这是现行规则，不是本工程新跑的 GPU 结论。"
+      ],
+      "transfer_hypothesis": "按 recipe.rules 中的 procedure 与 evidence 接入，规则优先于旧实验建议。",
+      "rule_id": "V41-P06",
+      "source_ids": [
+        "U01",
+        "S19",
+        "S16"
+      ],
+      "limits": [
+        "未补齐的阈值和实际后端证据不能视为验收通过。"
+      ],
+      "provenance": "用户当前指令与列出的历史合同/报告；来源 SHA256 见 sources。"
+    },
+    {
+      "id": "V41-P07",
+      "title": "对外暴露等价的 /metrics 和 /v1/metrics",
+      "status": "CURRENT_USER_POLICY",
+      "priority": 100,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "2026-10-20 用户明确提出的测量或验收原则；这是现行规则，不是本工程新跑的 GPU 结论。"
+      ],
+      "transfer_hypothesis": "按 recipe.rules 中的 procedure 与 evidence 接入，规则优先于旧实验建议。",
+      "rule_id": "V41-P07",
+      "source_ids": [
+        "U02",
+        "S21",
+        "S23",
+        "S27"
+      ],
+      "limits": [
+        "未补齐的阈值和实际后端证据不能视为验收通过。"
+      ],
+      "provenance": "用户当前指令与列出的历史合同/报告；来源 SHA256 见 sources。"
+    },
+    {
+      "id": "V41-P08",
+      "title": "Messages usage 四字段与缓存命中率必须口径一致",
+      "status": "CURRENT_USER_POLICY",
+      "priority": 100,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "2026-10-20 用户明确提出的测量或验收原则；这是现行规则，不是本工程新跑的 GPU 结论。"
+      ],
+      "transfer_hypothesis": "按 recipe.rules 中的 procedure 与 evidence 接入，规则优先于旧实验建议。",
+      "rule_id": "V41-P08",
+      "source_ids": [
+        "U02",
+        "S03",
+        "S21",
+        "S24"
+      ],
+      "limits": [
+        "未补齐的阈值和实际后端证据不能视为验收通过。"
+      ],
+      "provenance": "用户当前指令与列出的历史合同/报告；来源 SHA256 见 sources。"
+    },
+    {
+      "id": "V41-P09",
+      "title": "Router 拒绝超长输入，裁剪可容纳输入的输出预算",
+      "status": "CURRENT_USER_POLICY",
+      "priority": 100,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "2026-10-20 用户明确提出的测量或验收原则；这是现行规则，不是本工程新跑的 GPU 结论。"
+      ],
+      "transfer_hypothesis": "按 recipe.rules 中的 procedure 与 evidence 接入，规则优先于旧实验建议。",
+      "rule_id": "V41-P09",
+      "source_ids": [
+        "U02",
+        "S20",
+        "S22"
+      ],
+      "limits": [
+        "未补齐的阈值和实际后端证据不能视为验收通过。"
+      ],
+      "provenance": "用户当前指令与列出的历史合同/报告；来源 SHA256 见 sources。"
+    },
+    {
+      "id": "V41-P10",
+      "title": "按全局请求数/token 总量限流，不增加图片尺寸或格式限制",
+      "status": "CURRENT_USER_POLICY",
+      "priority": 100,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "2026-10-20 用户明确提出的测量或验收原则；这是现行规则，不是本工程新跑的 GPU 结论。"
+      ],
+      "transfer_hypothesis": "按 recipe.rules 中的 procedure 与 evidence 接入，规则优先于旧实验建议。",
+      "rule_id": "V41-P10",
+      "source_ids": [
+        "U02",
+        "S20",
+        "S22",
+        "S25",
+        "S26"
+      ],
+      "limits": [
+        "未补齐的阈值和实际后端证据不能视为验收通过。"
+      ],
+      "provenance": "用户当前指令与列出的历史合同/报告；来源 SHA256 见 sources。"
+    },
+    {
+      "id": "V41-P11",
+      "title": "必须回放 1200 纯文本，图文模型另回放 1200 随机插图样本",
+      "status": "CURRENT_USER_POLICY",
+      "priority": 100,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "2026-10-20 用户明确提出的测量或验收原则；这是现行规则，不是本工程新跑的 GPU 结论。"
+      ],
+      "transfer_hypothesis": "按 recipe.rules 中的 procedure 与 evidence 接入，规则优先于旧实验建议。",
+      "rule_id": "V41-P11",
+      "source_ids": [
+        "U03",
+        "S20",
+        "S03"
+      ],
+      "limits": [
+        "未补齐的阈值和实际后端证据不能视为验收通过。"
+      ],
+      "provenance": "用户当前指令与列出的历史合同/报告；来源 SHA256 见 sources。"
+    },
+    {
+      "id": "V41-H01",
+      "title": "单次 warmup 改长度，慢区间随未覆盖位置移动",
+      "status": "REJECTED_PERFORMANCE",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ],
+        "gpu_arch": "sm80"
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "108K warmup 后，144K TTFT 为 15.915s，高于 160K 的 14.099s，候选拒绝。",
+        "报告观察到超过已执行上下文位置的 chunk 明显变慢；正式阶段无已监控 Triton JIT 告警。"
+      ],
+      "recommended_actions": [
+        "在唯一 warmup 约束下定位按上下文位置增长的首次开销。",
+        "沿 chunk 增加 component timing/NVTX，检查 lazy initialization、autotune、图与 metadata 状态。"
+      ],
+      "required_evidence": [
+        "逐 chunk 时间与上下文起点",
+        "完整请求顺序",
+        "JIT 监控范围"
+      ],
+      "source_ids": [
+        "S05"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "候选是 108K warmup 诊断，不能接受为正式阶段；具体一次性开销算子尚未由该记录定位。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H02",
+      "title": "PP0 首层 mHC 的输入形态不同，普通层覆盖不能代替",
+      "status": "REJECTED_PERFORMANCE",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ],
+        "gpu_arch": "sm80"
+      },
+      "requires_capabilities": [
+        "mhc"
+      ],
+      "observations": [
+        "普通 decoder 层是 [tokens, hc_mult * hidden_size]，PP0 入口还有 [tokens, hidden_size]。",
+        "50K 正式请求在尾块触发专门化编译并增加约 4s；50K TTFT 11.040s 高于 144K 6.656s。"
+      ],
+      "recommended_actions": [
+        "把 operator、形状、dtype、layout、PP 角色与编译选项联合标识。",
+        "修复长度通用性或明确允许的启动准备，不能通过对全部评测 shape 单独 forward 预热规避 V41-P02。"
+      ],
+      "required_evidence": [
+        "模型入口与普通层调用证据",
+        "每个 rank 的编译事件",
+        "首个真实 tail 的计时"
+      ],
+      "source_ids": [
+        "S06"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H03",
+      "title": "形状长度通用化还要覆盖 alignment 和 stride 专门化",
+      "status": "REJECTED_INFERENCE_JIT",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ],
+        "gpu_arch": "sm80"
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "exp016/017 的 C1 速度与顺序门禁通过，但仍因推理期 JIT 拒绝。",
+        "记录把下一步定位到 runtime-layout 参数的 alignment 等专门化，不能仅看 M 是否 dynamic。"
+      ],
+      "recommended_actions": [
+        "检查长度、relay token count、tail stride 和地址对齐对编译 key 的影响。",
+        "单 warmup 后在未见长度、尾块和边界上检查编译日志及实际路径。"
+      ],
+      "required_evidence": [
+        "编译 key/专门化日志",
+        "未见 shape 的首请求数据",
+        "所有 worker 的监控覆盖"
+      ],
+      "source_ids": [
+        "S07",
+        "S08"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "这些记录没有证明所有 dynamic shape 策略无效。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H04",
+      "title": "主矩阵与 API 通过后，68 样本仍可否决候选",
+      "status": "REJECTED_SPEED68",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "完整速度矩阵与 API 门禁通过，首轮 68 样本仍失败。",
+        "报告记录 67 个相邻实际长度比较中 29 个失败，以及一条无可见首 token 的异常响应。"
+      ],
+      "recommended_actions": [
+        "冻结并运行全部 68 个样本，逐条保存实际长度、TTFT/TPOT、完成状态。",
+        "不得用规则矩阵、均值、已跑样本或挑选复测替代完整样本集。"
+      ],
+      "required_evidence": [
+        "68 条完整清单及 SHA256",
+        "逐样本原始请求与响应",
+        "所有反向对及失败记录"
+      ],
+      "source_ids": [
+        "S09"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "29 对失败是当时严格规则下的历史结论；本次规则变更后不能无证据重新宣布同一 run 通过。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H05",
+      "title": "计时口径变更后，缺少服务端字段只能记证据不足",
+      "status": "INDETERMINATE_UNDER_AMENDED_RULE",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "历史五个相邻失败由 client TTFT 计算；新合同要求 actual_prefill_s + decode_first_ms/1000。",
+        "全部 68 条原始记录的 server_metrics 为空，因此不能按新口径接受或拒绝。"
+      ],
+      "recommended_actions": [
+        "为每个 request_id 保存服务端 prefill 区间、首 decode 和 client TTFT，明确排队及网络是否计入。",
+        "冻结旧记录，使用新合同新测；不估算缺失服务端时间，不拼接其他 run。"
+      ],
+      "required_evidence": [
+        "request_id 关联的 client/server 时间",
+        "计时公式与合同版本",
+        "不可变原始记录"
+      ],
+      "source_ids": [
+        "S10"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "INDETERMINATE 不能当作 PASS，也不等同于确认性能退化。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H06",
+      "title": "零命中不意味着 Prefix Cache 开关对调度没有影响",
+      "status": "PROTOCOL_PASS_SPEED_THRESHOLD_NOT_MET",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "首 token 替换且不发送 cache_salt，11 点/39 请求全部完成并零命中。",
+        "72K C1 TPOT 16.169ms，C3 70.380ms，C8 173.158ms；协议通过但速度门槛未达成。",
+        "报告中关闭 Prefix Cache 会改变 TTFT/TPOT，不能拿 cache-off 结果替代正式 cache-on 口径。"
+      ],
+      "recommended_actions": [
+        "把缓存协议通过与性能通过分开。",
+        "在固定正式开关下分析并发 active set、prefill/decode phase 和排队，cache-off 只作控制实验。"
+      ],
+      "required_evidence": [
+        "实际开关、首 block 隔离与 usage",
+        "C1-C4 曲线及逐请求时间",
+        "控制实验身份与原始 trace"
+      ],
+      "source_ids": [
+        "S04"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "报告对调度机制的解释是该配置下的归因，不是所有后端的通用根因。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H07",
+      "title": "旋转调度改善 prefill 后仍须联合约束 TTFT 与 TPOT",
+      "status": "STAGE_PASS_FULL_TASK_REJECTED",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ],
+        "gpu_arch": "sm80"
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "full-batch rotation 将 72K C2 TTFT 从约 37.92s 降为 5.91s，C3 从 72.20s 降为 8.50s。",
+        "阶段 12s/50ms 通过，但 C3 TPOT 39.37ms 且其他 shape 仍异常，整个任务未通过。"
+      ],
+      "recommended_actions": [
+        "分析各请求进入 decode 的异步 PP phase；把全矩阵 TTFT、TPOT 和长度顺序放在一起验收。",
+        "保留 TTFT 获益和 TPOT 代价，不能只排序单一指标。"
+      ],
+      "required_evidence": [
+        "同一 run 完整矩阵",
+        "prefill/decode phase trace",
+        "分阶段与整体 decision"
+      ],
+      "source_ids": [
+        "S11"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H08",
+      "title": "GSM8K 重试超时先区分接收链路与模型计算",
+      "status": "REJECTED_GSM_RETRY_TIMEOUT",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "速度与 speed68 通过，但 GSM8K 一条截断后重试在约 900s 超时，完整候选拒绝。",
+        "原记录要求验证 streamed GSM reception，保持生成、重试、计分和 socket inactivity timeout 不变。"
+      ],
+      "recommended_actions": [
+        "检查 reasoning/content 接收、首字节与流式消费，保留 initial 与 retry 记录。",
+        "修复后以新合同运行完整质量集，不能只补测失败题或调大超时掩盖问题。"
+      ],
+      "required_evidence": [
+        "逐题原始响应、重试原因与时间",
+        "接收方式和固定 timeout",
+        "完整质量分母与失败数"
+      ],
+      "source_ids": [
+        "S12"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "该记录不单独证明失败根因是数值精度下降。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H09",
+      "title": "继承已验收 async/DSpark 配置须同时继承边界与证据",
+      "status": "FINAL_ACCEPTED_IN_SOURCE_SUMMARY",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [
+        "target_verified_speculation"
+      ],
+      "observations": [
+        "v2 最终摘要记录 ACCEPTED_FINAL_WITH_USER_SCOPE_UPDATE，且包含明确阶段、质量、runtime 和范围更新来源。",
+        "摘要列出的通过只适用于它的源码、运行配置、负载和当时合同。"
+      ],
+      "recommended_actions": [
+        "把 baseline 最小适配与性能 patch 分开；迁移时绑定源码/镜像/参数，不凭优化名称启用开关。",
+        "投机路径必须由 target model 验证 draft token，并覆盖拒绝、回退及请求生命周期。"
+      ],
+      "required_evidence": [
+        "最终摘要与范围版本",
+        "完整 diff、runtime 与负载身份",
+        "投机验证及回退证据"
+      ],
+      "source_ids": [
+        "S13",
+        "S02"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "不能把 v2 cache-off 数据当成 v3 cache-on 的性能参考或最终验收。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H10",
+      "title": "候选 PASS 不能代替最终不可变镜像复验",
+      "status": "CANDIDATE_ACCEPTED_PENDING_FINAL_REVALIDATION_AT_THIS_RECORD",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "candidate_exp028_acceptance.json 的 decision 为 PASS，记录仍列出下一步要求。",
+        "v3 要求最终不可变镜像、不外挂源码，并在新部署上完成速度/API 与两轮稳定性。"
+      ],
+      "recommended_actions": [
+        "decision 携带 stage、合同版本、源码 tree、image digest 与 service 身份。",
+        "候选和最终镜像分开记录，不把后续另一个 run 的 PASS 拼回本记录。"
+      ],
+      "required_evidence": [
+        "candidate 与 final 分开的 Manifest",
+        "最终镜像新部署记录",
+        "同服务速度/API/稳定性证据"
+      ],
+      "source_ids": [
+        "S14",
+        "S03"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "仅说明该记录时间点的阶段边界，不否认后续可能存在独立最终通过。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H11",
+      "title": "KV offloading 专项通过后，真正空流仍能使 Speed68 失败",
+      "status": "SCOPED_PASS_AND_SEPARATE_RUN_REJECTED",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [
+        "kv_offloading"
+      ],
+      "observations": [
+        "冻结 1200 条纯文本 OFF/ON 命中率与配对 effective-TTFT 专项通过。",
+        "后续 Speed68 中一条 HTTP200、length finish、256 completion tokens 的响应所有 content/reasoning delta 均空且无工具输出，run 被拒绝。"
+      ],
+      "recommended_actions": [
+        "命中率、配对 TTFT、业务完成性和整体验收分开归档。",
+        "不用空文本相似度评分，但仍检查真正无有效生成内容的异常流。"
+      ],
+      "required_evidence": [
+        "同 source_id 配对记录与 OFF/ON usage",
+        "完整 SSE 与 finish/usage",
+        "独立 run 和阶段身份"
+      ],
+      "source_ids": [
+        "S15",
+        "S16"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "专项 PASS 不能扩展成模型整体通过；该现象不能从最终 content 为空单独判断。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H12",
+      "title": "shape-padding 与融合优化必须保持真实模型语义",
+      "status": "HISTORICAL_CONTRACT_REQUIREMENT",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "合同允许内部执行 shape 改变，但不允许改变真实 token、position、mask、sequence length、KV slot 或 vision 边界。",
+        "算子等价性要求公式、reference、误差与确定性/near-tie 用例，top-k 不能只比较 cosine。"
+      ],
+      "recommended_actions": [
+        "把真实 token 数与 padded execution shape 分开记录。",
+        "以实际 dtype/layout、边界 shape、top-k 集合和规定顺序验证候选，随后回到 E2E。"
+      ],
+      "required_evidence": [
+        "公式与参考实现",
+        "真实/填充 shape 元数据",
+        "atol/rtol/误差与 near-tie case"
+      ],
+      "source_ids": [
+        "S01",
+        "S03"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "历史已接受的 TF32/INT8 等路径不构成继续扩大量化范围的授权。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H13",
+      "title": "PP 切分与依赖加载失败不能作为性能负分",
+      "status": "DEPLOYMENT_FAILURE",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ],
+        "gpu_arch": "sm80"
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "索引记录 TP2/PP4 的 10 层切分出现 compressed-KV source layer 缺失，候选在加载前拒绝。",
+        "另有 Humming 依赖缺失记录，未进入有效速度测量。"
+      ],
+      "recommended_actions": [
+        "部署前核对跨层 KV/共享依赖与 PP 层分配，以及实际 backend 依赖版本。",
+        "保持失败证据并分类为部署/环境问题；资源与依赖修复后重新跑同一候选。"
+      ],
+      "required_evidence": [
+        "实际层分配与跨层依赖",
+        "环境版本和加载日志",
+        "是否产生有效请求"
+      ],
+      "source_ids": [
+        "S17"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "不能根据加载失败判定该 TP/PP 配置本身性能差或所有模型不支持它。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H14",
+      "title": "性能改动仍须保持 thinking、vision 与 admission/API 语义",
+      "status": "HISTORICAL_CONTRACT_REQUIREMENT",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "V4.1 合同要求 thinking-high 与 vision 实际加载/执行，不能以关闭链路换性能。",
+        "输入模板、tokenizer、上下文/输出预算和请求状态边界属于验收身份。"
+      ],
+      "recommended_actions": [
+        "从权重/processor 与真实 forward 证明多模态能力，不能只看启动参数。",
+        "API 与资源生命周期回归覆盖合法输入、超限、取消、超时、工具和请求隔离。",
+        "新模型应重新定义自己的能力和验收合同，不复制 V4.1 的阈值或拓扑。"
+      ],
+      "required_evidence": [
+        "thinking 配置及行为",
+        "vision 权重与执行证据",
+        "API admission 与生命周期结果"
+      ],
+      "source_ids": [
+        "S01",
+        "S03"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "本条来自历史合同；不是本工程已实现对应 GPU/平台 adapter 的声明。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H15",
+      "title": "cache creation 是独立计数，不能再次扣减未命中 input",
+      "status": "HISTORICAL_LOCAL_API_TEST",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "历史本地 Messages 单测检查了 cache creation 不减少 uncached input、流式 cache 状态与四字段集合。",
+        "历史合同明确完整 prompt=input+cache_read；automatic Prefix Cache 无独立 creation 计数时 creation=0。"
+      ],
+      "recommended_actions": [
+        "冻结后端 usage 计费口径，对非流式与每个携带 usage 的流式事件分别核对。",
+        "历史单测中的缺字段默认值不能作为真实缓存读取量未知时填零的依据。"
+      ],
+      "required_evidence": [
+        "逐事件原始 usage",
+        "完整 prompt 与 native cache counters",
+        "creation 计数来源或没有独立计数的明确合同"
+      ],
+      "source_ids": [
+        "S24",
+        "S21"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "该来源是本地 API 单测摘要，不是新的 GPU 测量；不能推广到三段互斥计费的其他后端。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H16",
+      "title": "取消/断连先关闭上游，再释放一次全局 reservation",
+      "status": "HISTORICAL_LOCAL_API_TEST",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "本地生命周期测试覆盖正常完成、上游异常、客户端取消与断连。",
+        "测试检查 close 先于 single release，并注入 duplicate release 验证可检测且不重复扣减。"
+      ],
+      "recommended_actions": [
+        "用统一 request_id 追踪 reserve、upstream close 与 release 次序；并发状态更新保持原子性。",
+        "按终态重算账本，真实任务结束时计数归零；拒绝请求无 reservation。"
+      ],
+      "required_evidence": [
+        "包含各种终态的事件账本",
+        "release 计数及顺序",
+        "高水位、结束状态和上游存活检查"
+      ],
+      "source_ids": [
+        "S25",
+        "S22"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "单测主动注入的重复释放错误是检测用例，不应当作生产回放的真实错误计数。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    },
+    {
+      "id": "V41-H17",
+      "title": "metrics 代理不能把上游失败掩盖为空的成功响应",
+      "status": "HISTORICAL_LOCAL_API_TEST",
+      "priority": 0,
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "observations": [
+        "历史代理单测覆盖可恢复 transport error、持续连接失败及 upstream HTTP500。",
+        "记录要求保留 upstream HTTP500 状态，持续 transport 失败返回明确 502，不能返回空 HTTP200。"
+      ],
+      "recommended_actions": [
+        "两个公开 metrics 路径复用同一采集与错误语义，有限重试并保留实际失败。",
+        "用负载、完成后的 counter 增量和失败注入验证，而非仅测试路径存在。"
+      ],
+      "required_evidence": [
+        "上游/外部 HTTP 状态与响应",
+        "两路径的失败语义",
+        "真实指标 count 增量"
+      ],
+      "source_ids": [
+        "S27"
+      ],
+      "transfer_hypothesis": "仅把该经验作为当前热点与当前合同下的待验证候选；现行规则优先。",
+      "limits": [
+        "这些是本地代理测试；双公开路径和真实服务可观测性仍需新的 adapter 验收。",
+        "来源是历史合同/报告，未在本次重跑 GPU；不能把历史结论直接当作新候选通过。"
+      ],
+      "provenance": "由所列来源整理，完整来源摘要与 SHA256 见 recipe.sources；未复制内部运维记录。"
+    }
+  ]
+}

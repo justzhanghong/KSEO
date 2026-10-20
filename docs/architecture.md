@@ -9,7 +9,7 @@ KSEO 按职责分层，并分别展示分层架构、System 大流程和优化�
 | 层次 | 职责 | 对应实现 |
 | --- | --- | --- |
 | L1 目标与上下文 | 模型、硬件、Workload、能力、目标、质量和预算 | TaskSpec、context、业务 profile |
-| L2 System 编排 | 基线、配置优先策略、热点路由、候选集成、E2E 选择和最终交付 | workflows/system.py、workflows/pipeline.py |
+| L2 System 编排 | 基线、配置优先策略、最大瓶颈点与收益路由、候选集成、E2E 选择和最终交付 | workflows/system.py、workflows/pipeline.py |
 | L3 优化子流程 | Configuration、Scheduling、Kernel 分别产生候选和证据 | workflows/configuration.py、scheduling.py、kernel.py |
 | L4 共享运行基础 | 执行、隔离源码、独立 Validator、状态、资源、Profile 和经验 | Runner、Executor、Source、Validator、profiling、Knowledge |
 
@@ -19,11 +19,11 @@ Runner 管理一个 trial 的生命周期和可靠执行。System Workflow 决�
 
 ![System 大流程](system-workflow.svg)
 
-环境和基线通过后，System 使用当前配置与源码的 Profile 选择优化路径。Configuration sweep 先执行，并有独立试验上限；之后按当前热点的类型、占比和可改善空间进入 Scheduling 或 Kernel。
+环境和基线通过后，System 使用当前配置与源码的 Profile 选择优化路径。Configuration sweep 先执行，并有独立试验上限；之后结合当前关键路径的耗时占比与可改善空间定位最大瓶颈点，进入 Scheduling 或 Kernel。
 
-所有候选统一进入隔离源码、部署、测量和完整合同验收。只有全部门禁通过且满足改善要求的候选才能替换 best。接受候选后使用该候选实际采集的 Profile 继续诊断，不能沿用旧配置的热点排名。
+所有候选统一进入隔离源码、部署、测量和完整合同验收。只有全部门禁通过且满足改善要求的候选才能替换 best。接受候选后使用该候选实际采集的 Profile 继续定位最大瓶颈点，不能沿用旧配置的瓶颈排名。
 
-热点排序采用 `share × (1 - 1 / achievable_speedup)` 估计可能节省的时间比例。估计值只用于路由和预算；gpu_time 可能含重叠时间，实际端到端收益仍由 E2E 测量判定。
+瓶颈候选排序采用 `share × (1 - 1 / achievable_speedup)` 估计可能节省的时间比例。估计值只用于路由和预算；gpu_time 可能含重叠时间，实际端到端收益仍由 E2E 测量判定。图中的“最大瓶颈点”表达当前优先处理的端到端瓶颈；标准化协议中的字段名 `hotspots` 保持兼容。
 
 最终复验的预算可以预留。搜索结束时，在新的 trial 中运行完整合同，再输出配置、累积 patch、Manifest、原始证据和中文报告。
 
@@ -33,13 +33,13 @@ Runner 管理一个 trial 的生命周期和可靠执行。System Workflow 决�
 
 Configuration 负责有限的 flags、env 和 backend 参数候选，包含去重、失败分类和预算控制。它不自行宣布候选已获性能收益。
 
-Scheduling 接收当前 host、通信或调度热点，由外部 Agent 形成一个可检验假设，返回受参数空间约束的配置或可回退 patch。部署和端到端验证由 System 统一执行。
+Scheduling 接收当前 host、通信或调度的最大瓶颈点，由外部 Agent 形成一个可检验假设，返回受参数空间约束的配置或可回退 patch。部署和端到端验证由 System 统一执行。
 
 ## Kernel 内部小流程
 
 ![Kernel 小流程](kernel-workflow.svg)
 
-Kernel Workflow 从选定热点提取实际调用和测试 case，冻结参考实现与 I/O oracle，再让独立 proposer 生成 patch。实际 shape、dtype、stride 和数值边界由目标后端 extractor 负责提供。
+Kernel Workflow 从选定瓶颈点提取实际调用和测试 case，冻结参考实现与 I/O oracle，再让独立 proposer 生成 patch。实际 shape、dtype、stride 和数值边界由目标后端 extractor 负责提供。
 
 局部 validator 在独立源码副本上执行完整 case、数值检查、路径检查和局部性能测试。正确性与局部性能可以由同一个独立 validator 命令依次完成。oracle 的文件集合与 SHA256 在提案和验证后均被重查，修改 oracle 会使候选失效。
 
@@ -53,7 +53,7 @@ patch 只能修改 extractor 声明的 editable_files。局部证据绑定 patch
 | --- | --- |
 | System 层包裹独立 Kernel 工作流 | System Workflow 调用独立 Kernel Workflow，二者有各自阶段与产物 |
 | 先尝试成本较低的配置和 backend 调整 | Configuration 有独立预算，先于热点源码工作执行 |
-| profiling 与 Amdahl 选择热点 | 使用标准化 Profile，路由至 Scheduling 或 Kernel |
+| profiling 与 Amdahl 定位瓶颈 | 使用标准化 Profile 定位最大瓶颈点，结合收益路由至 Scheduling 或 Kernel |
 | 抽取独立任务并保持参考 oracle 不变 | extractor、冻结文件清单、独立 validator 和 oracle hash |
 | patch 集成后重新检验整体效果 | System 统一 E2E 门禁、best 选择、回退和重采样 |
 

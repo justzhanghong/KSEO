@@ -35,6 +35,11 @@ def agent(config: dict, state: dict, directory: Path, variables: dict, environme
     learned = Path(variables["run_dir"]) / "learned-experience.json"
     if learned.exists():
         cards += read_json(learned)["cards"]
+    from .recipes import for_context
+    recipe = for_context(config["context"])
+    if recipe is not None:
+        # 现行规则由完整 recipe 提供，历史 top-k 保留给实际案例。
+        cards = [card for card in cards if card.get("status") != "CURRENT_USER_POLICY"]
     request = {"schema_version": 1, "context": config["context"], "contract": config["validation"],
                "parameters": config["parameters"], "space": config["optimizer"].get("space", {}),
                "history": state["trials"], "best": state.get("best"),
@@ -43,6 +48,9 @@ def agent(config: dict, state: dict, directory: Path, variables: dict, environme
                "instructions": "只向 proposal_dir 写 proposal.json 和可选 patch.diff。不得修改 source_dir、合同或验收器。每次只提出一个可检验假设。"}
     if workflow is not None:
         request["workflow"] = workflow
+    if recipe is not None:
+        request["model_recipe"] = recipe
+        request["instructions"] += " model_recipe 的现行规则优先于历史案例和 learned-experience；未知阈值不得猜测。recipe 不是已经执行的验收证据，不得据此写 PASS。"
     write_json(request_path, request)
     env = {**environment, "KSEO_AGENT_REQUEST": str(request_path), "KSEO_AGENT_PROPOSAL": str(proposal_path)}
     execute(config["optimizer"], directory / "process", {**variables, "proposal_dir": str(directory)}, env, remaining=remaining)

@@ -34,7 +34,7 @@
 <text x="308" y="427" font-size="16" fill="#56708b">基线、迭代、最终复验与交付</text>
 <rect x="650" y="363" width="330" height="90" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
 <text x="668" y="397" font-size="20" fill="#10294a" font-weight="700">Strategy Router</text>
-<text x="668" y="427" font-size="16" fill="#56708b">配置优先；按当前热点与收益路由</text>
+<text x="668" y="427" font-size="16" fill="#56708b">配置优先：按最大瓶颈点与收益路由</text>
 <rect x="1010" y="363" width="330" height="90" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
 <text x="1028" y="397" font-size="20" fill="#10294a" font-weight="700">E2E Integrator</text>
 <text x="1028" y="427" font-size="16" fill="#56708b">集成、验收、最佳方案与回退</text>
@@ -46,7 +46,7 @@
 <rect x="650" y="565" width="330" height="195" rx="12" fill="#ffffff" stroke="#d5e1ef" stroke-width="1.5"/>
 <text x="668" y="599" font-size="21" fill="#10294a" font-weight="700">Scheduling Workflow</text>
 <text x="668" y="629" font-size="16" fill="#56708b">host / 通信 / 调度</text>
-<text x="668" y="653" font-size="16" fill="#56708b">热点分析 → 可回退候选</text>
+<text x="668" y="653" font-size="16" fill="#56708b">瓶颈分析 → 可回退候选</text>
 <text x="668" y="677" font-size="16" fill="#56708b">返回参数或源码 patch</text>
 <rect x="1010" y="565" width="330" height="195" rx="12" fill="#ffffff" stroke="#d5e1ef" stroke-width="1.5"/>
 <text x="1028" y="599" font-size="21" fill="#10294a" font-weight="700">Kernel Workflow</text>

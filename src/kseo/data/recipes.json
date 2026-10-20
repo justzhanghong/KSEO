@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "recipes": [{
+    "id": "deepseek-v4.1-flash",
+    "aliases": ["deepseek_v4_1", "deepseek_v4_1_flash", "DeepSeek-V4.1-Flash", "deepseek-ai/DeepSeek-V4.1-Flash"],
+    "file": "experience-v41.json",
+    "description": "V4.1-Flash 测量与优化经验；不包含真实部署 adapter"
+  }]
+}
