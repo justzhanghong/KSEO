@@ -12,7 +12,11 @@ KSEO 参考 GEAK 的 System 与 Kernel 分层设计，组织端到端推理优�
 
 优化能力分为 **Configuration、Scheduling、Kernel** 三个子流程。共享 Runner 提供执行、状态和资源能力；System 层负责端到端选择。任务书、历史实验、社区知识和 profiling 都是输入来源，工作流按优化职责划分。
 
-当前提供标准化瓶颈与 Amdahl 排序、配置优先搜索、Scheduling 提案、独立 Kernel oracle 与局部验证、可逆集成、E2E 门禁、恢复和交付包。真实模型通过 Backend adapters 和外部 coding Agent 接入，内置 CPU 示例始终标记为 `synthetic`。
+当前提供标准化瓶颈与 Amdahl 排序、配置优先搜索、Scheduling 提案、独立 Kernel oracle 与局部验证、可逆集成、E2E 门禁、恢复和交付包。
+
+优化真实模型时，你需要提供模型路径、基础源码、基础镜像、可用服务器或集群、优化目标等信息。Agent 再根据这些信息准备环境、启动服务、分析性能、修改代码和运行测试。当前已提供优化流程和接入接口，实际执行脚本还需要由 Agent 根据具体平台接通。
+
+仓库里的 CPU 示例使用模拟数据（`synthetic`），用于检查优化流程能否正常走通。这些示例的速度和收益不代表真实模型的优化结果。
 
 ## Architecture
 
