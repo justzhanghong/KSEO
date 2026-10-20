@@ -32,6 +32,8 @@ Markdown 可以继续承担目标解释、实验叙述和经验说明。影响�
 
 ## 内置经验
 
+经验现在统一纳入四层知识：6 条原则、12 个方法、35 条场景规则和 46 个历史案例；每层都有证据边界。使用方法见 [分层知识手册](knowledge.md)，逐案例事实和来源见 [案例索引](knowledge-cases.md)。原有卡片与模型 recipe 保留原文和状态，通过引用进入层级。
+
 原有 9 张代表性经验卡保留：
 
 - Flash async 与 DSpark 方案的历史验收。
@@ -46,7 +48,9 @@ Markdown 可以继续承担目标解释、实验叙述和经验说明。影响�
 
 数据位于 `src/kseo/data/experience.json`。卡片保留模型结构、SM、拓扑和语义条件，移除了内部主机、账号、绝对路径及原始运维日志。历史摘要不是本项目新跑的 GPU 测量。
 
-当前优先深化 V4.1-Flash，新增 11 条现行规则与 17 张历史案例，位于 `data/experience-v41.json`，通过 `data/recipes.json` 注册。见 [V4.1-Flash 优化经验](models/deepseek-v4.1-flash.md)。现行规则作为完整 `model_recipe` 进入 Agent 请求，历史案例再按条件和 top-k 检索，避免硬件特定的旧建议挤掉当前测量原则。其他模型后续独立补充经验包。
+V4.1-Flash 专项保留 11 条现行规则与 17 张历史案例，位于 `data/experience-v41.json`，通过 `data/recipes.json` 注册。见 [V4.1-Flash 优化经验](models/deepseek-v4.1-flash.md)。现行规则作为完整 `model_recipe` 进入 Agent 请求，历史案例再按条件和 top-k 检索，避免硬件特定的旧建议挤掉当前测量原则。
+
+本轮按用户授权，将已展示的 GLM-5.1/5.2、V4-Flash 与 V4.1 的 20 条经验纳入 `data/knowledge-hierarchy.json`，另从已有材料归纳 4 条身份/阶段/失败/因果规则。新增来源逐份核对 SHA256；未重跑 GPU，未全量审计历史日志。分层组织的确认不等于用户确认所有假设为已证实根因。其他模型目前有条件性的跨模型知识，尚无独立完整 recipe 或真实部署 adapter。
 
 ```bash
 kseo recipe

@@ -1,0 +1,8 @@
+{
+  "model_family": "glm5_2",
+  "capabilities": [
+    "pd_disaggregation", "mtp", "pp", "async_scheduling", "prefix_cache",
+    "multi_prefill_producer", "persistent_batch", "chunked_prefill", "index_share", "sparse_attention"
+  ],
+  "note": "仅演示知识筛选；这些能力声明不证明真实部署、路由或模型验收已经通过。"
+}

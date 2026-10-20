@@ -44,10 +44,14 @@ def parser() -> argparse.ArgumentParser:
     init.add_argument("--server", action="append", required=True)
     init.add_argument("--profile", type=Path, help="已建立的完整业务 profile；省略时输出待补齐草稿")
     init.add_argument("--out", type=Path, required=True)
-    knowledge = sub.add_parser("knowledge", help="按结构和硬件条件检索经验")
-    knowledge.add_argument("--context", required=True, type=Path, help="context JSON")
-    knowledge.add_argument("--extra", type=Path)
-    knowledge.add_argument("--limit", type=int, default=8, help="返回经验条数；现行规则另由 model recipe 完整提供")
+    knowledge = sub.add_parser("knowledge", help="按层浏览知识，或按结构和能力检索经验")
+    knowledge.add_argument("--context", type=Path, help="检索 context JSON；未知能力不能假定存在")
+    knowledge.add_argument("--extra", type=Path, help="仅用于原有平面卡片检索")
+    knowledge.add_argument("--limit", type=int, default=8, help="历史卡片/迁移规则条数；层级中的现行规则完整提供")
+    knowledge_modes = knowledge.add_mutually_exclusive_group()
+    knowledge_modes.add_argument("--tree", action="store_true", help="列出四层全目录，仅用于导航")
+    knowledge_modes.add_argument("--node", help="查看指定节点、上级、子项和来源，例如 R15 或 case:R15")
+    knowledge_modes.add_argument("--hierarchy", action="store_true", help="按 context 检索规则，并返回上层方法与匹配案例")
     recipe = sub.add_parser("recipe", help="查看模型经验及现行测量规则；不是部署 adapter")
     recipe.add_argument("name", nargs="?", help="例如 deepseek-v4.1-flash；省略时列出已有经验包")
     recipe.add_argument("--out", type=Path, help="导出 JSON，不覆盖已有文件")
@@ -122,9 +126,23 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "knowledge":
             if args.limit < 1:
                 raise KSEOError("--limit 必须至少为 1")
-            context = read_json(args.context)
-            cards = [card for card in load_cards(args.extra) if card.get("status") != "NEEDS_REVIEW"]
-            print(json.dumps(retrieve(context, cards, args.limit), ensure_ascii=False, indent=2))
+            from .knowledge_tree import inspect_node, overview, retrieve_hierarchy
+            if args.extra and (args.tree or args.node or args.hierarchy):
+                raise KSEOError("--extra 仅支持平面检索；未审阅卡片不能自动成为分层知识")
+            if args.tree or args.node:
+                if args.context:
+                    raise KSEOError("目录/节点用于完整导航，不应用 context；条件筛选请使用 --hierarchy --context")
+                value = inspect_node(args.node) if args.node else overview()
+            else:
+                if not args.context:
+                    raise KSEOError("检索需要 --context；浏览目录请使用 --tree")
+                context = read_json(args.context)
+                if args.hierarchy:
+                    value = retrieve_hierarchy(context, args.limit)
+                else:
+                    cards = [card for card in load_cards(args.extra) if card.get("status") != "NEEDS_REVIEW"]
+                    value = retrieve(context, cards, args.limit)
+            print(json.dumps(value, ensure_ascii=False, indent=2))
         elif args.command == "recipe":
             from .recipes import catalog, load_recipe
             value = load_recipe(args.name) if args.name else catalog()

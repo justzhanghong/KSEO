@@ -32,6 +32,10 @@ request 含当前合同、context、历史结果、最佳候选、源码目录�
 
 明确匹配 V4.1-Flash 时，request 还包含完整 `model_recipe`：现行测量原则、规则版本、来源索引、所需证据和未明确参数。它不受经验 top-k 截断；历史案例与 learned-experience 不得覆盖当前规则。Feature 的条件选层不等于重新启用已退役门禁，未知增长倍率、2048 阈值语义和计时口径不得猜测。recipe 是执行约束与建议，不是已经完成的验收证据。
 
+`knowledge_hierarchy` 提供由粗到细的知识：6 条原则始终携带，按明确条件选中迁移规则，再返回其方法、完整祖先链、匹配模型/硬件/能力的案例和来源。现行规则在该字段中也完整保留，迁移规则默认 top-8；原 `experience` 平面检索接口不变。`navigation_case_ids` 只用于下钻导航，不表示那些案例已经匹配本次上下文。
+
+Agent 必须保留 `evidence_boundary`，区分当前用户规范、历史实测、代码审阅、本地测试与输出因果未闭环。祖先概括、来源 hash、规则命中和历史 PASS 均不能作为当前任务 PASS。未知能力不假定匹配，旧阈值和修复代码不能直接变成新模型默认。参见 [分层知识](knowledge.md)。
+
 Kernel proposer 还会收到 `workflow.oracle_dir`、`oracle_sha256`、`cases` 和 `editable_files`。oracle 只读，patch 必须只修改 editable_files；直接修改 source_dir 或 oracle 会使候选失效。
 
 ## 提案

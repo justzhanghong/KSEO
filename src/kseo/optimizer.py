@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .executor import execute
 from .knowledge import load_cards, retrieve
+from .knowledge_tree import retrieve_hierarchy
 from .util import KSEOError, canonical, confined, digest, read_json, write_json
 
 
@@ -45,7 +46,10 @@ def agent(config: dict, state: dict, directory: Path, variables: dict, environme
                "history": state["trials"], "best": state.get("best"),
                "source_dir": variables["source_dir"], "proposal_dir": str(directory),
                "experience": retrieve(config["context"], cards),
-               "instructions": "只向 proposal_dir 写 proposal.json 和可选 patch.diff。不得修改 source_dir、合同或验收器。每次只提出一个可检验假设。"}
+               "knowledge_hierarchy": retrieve_hierarchy(config["context"]),
+               "instructions": "只向 proposal_dir 写 proposal.json 和可选 patch.diff。不得修改 source_dir、合同或验收器。每次只提出一个可检验假设。"
+                               " knowledge_hierarchy 按原则、方法、场景规则、案例组织；必须保留 evidence_boundary。"
+                               " 导航关系不等于因果证明，历史参数不是新模型默认，迁移规则和历史案例均不是当前验收证据。"}
     if workflow is not None:
         request["workflow"] = workflow
     if recipe is not None:

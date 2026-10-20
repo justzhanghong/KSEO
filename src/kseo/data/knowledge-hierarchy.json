@@ -1,0 +1,2518 @@
+{
+  "schema_version": 1,
+  "id": "kseo-optimization-knowledge",
+  "revision": "2026-10-20.1",
+  "organization_status": "USER_AUTHORIZED_HIERARCHICAL_ORGANIZATION",
+  "organization_note": "用户确认按由粗到细的多层次知识整理；此授权不提升历史事实或未闭环假设的证据等级。",
+  "scope": "抽查 GLM-5.1 NVFP4/FP8、GLM-5.2、V4-Flash 与 V4.1-Flash 的代表性正式报告、故障分析及部分原始日志；不是全量日志逐行审计。",
+  "gpu_runs_in_this_organization": 0,
+  "levels": {
+    "1": "优化原则",
+    "2": "诊断与优化方法",
+    "3": "带条件的场景规则",
+    "4": "历史案例与来源证据"
+  },
+  "precedence": [
+    "当前任务合同和明确用户规则",
+    "匹配模型的现行 recipe",
+    "带条件的迁移规则与本轮经验",
+    "历史案例"
+  ],
+  "global_boundary": [
+    "知识命中、案例归类和组织确认都不等于当前任务验收通过。",
+    "迁移规则用于提出检查/实验，旧参数、阈值与组合收益不能直接充当新模型默认。",
+    "未知能力不假定存在；原始来源不随公开工程分发，SHA256 只有在拿到相同原文件时才能核验。",
+    "单机和 P/D 相关知识不代表已经具备可执行的真实部署 adapter。"
+  ],
+  "capability_vocabulary": {
+    "cuda_graph": "实际运行启用 CUDA Graph",
+    "sparse_attention": "实际注意力路径为稀疏实现",
+    "pp": "实际部署为多 PP stage",
+    "pd_disaggregation": "当前任务配置为 P/D；真实路由仍须按 R09 验收",
+    "index_share": "模型结构具备 IndexShare",
+    "mtp": "实际启用 MTP/speculative decoding",
+    "async_scheduling": "实际启用异步调度",
+    "persistent_batch": "复用 persistent batch row",
+    "chunked_prefill": "实际启用 chunked prefill",
+    "multi_prefill_producer": "存在多个 Prefill producer",
+    "prefix_cache": "实际启用 Prefix Cache",
+    "thinking": "具有并启用相应 Thinking 路径",
+    "tools": "对外提供工具消息协议",
+    "multimodal": "实际支持多模态路径",
+    "shared_storage": "部署可变产物使用共享存储"
+  },
+  "nodes": [
+    {
+      "id": "K01",
+      "level": 1,
+      "parent_id": null,
+      "title": "先保证模型语义与合同可比",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "principle",
+      "status": "GUIDANCE",
+      "summary": "先验证模型能力、结构和参考，再冻结 thinking、输出预算、质量口径及协议；性能变化不能悄悄改变任务定义。",
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "K02",
+      "level": 1,
+      "parent_id": null,
+      "title": "围绕最大瓶颈点和 E2E 收益优化",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "principle",
+      "status": "GUIDANCE",
+      "summary": "按因果关键路径、可改善空间和测量噪声分配预算；micro 收益须通过完整请求验证。",
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "K03",
+      "level": 1,
+      "parent_id": null,
+      "title": "覆盖真实负载、执行阶段和资源边界",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "principle",
+      "status": "GUIDANCE",
+      "summary": "真实 shape、冷路径、Prefill/Decode、Graph 与内存峰值共同决定可用性；平均改善不能掩盖合同内回退。",
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "K04",
+      "level": 1,
+      "parent_id": null,
+      "title": "维护请求与跨阶段状态的一致性",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "principle",
+      "status": "GUIDANCE",
+      "summary": "区分有效内容、计算进度、已验证 token 和返回状态；复用前证明状态及 KV 轨迹兼容。",
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "K05",
+      "level": 1,
+      "parent_id": null,
+      "title": "把 API、观测、准入和稳定性作为交付能力",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "principle",
+      "status": "GUIDANCE",
+      "summary": "吞吐与延迟之外，还要检查真实 metrics、usage、预算、终态释放、协议及持续服务行为。",
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "K06",
+      "level": 1,
+      "parent_id": null,
+      "title": "让证据可追溯，让结论停在证据边界",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "principle",
+      "status": "GUIDANCE",
+      "summary": "来源、身份、合同和阶段随结论保存；部署失败、无效测量、性能回退、机制分析和已证实根因分别记录。",
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "M01",
+      "level": 2,
+      "parent_id": "K01",
+      "title": "能力矩阵、结构适配与冻结参考",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "method",
+      "status": "GUIDANCE",
+      "procedure": [
+        "核对 architecture×GPU×attention×dtype×backend/version×TP/PP/MTP。",
+        "先独立修正结构与参考，再冻结 baseline/oracle；用真实路径 smoke 确认可用。"
+      ],
+      "required_evidence": [
+        "实际模型 config/权重/forward",
+        "backend 与 runtime 指纹",
+        "正确参考与版本"
+      ],
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "M02",
+      "level": 2,
+      "parent_id": "K01",
+      "title": "冻结质量合同与条件门禁",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "method",
+      "status": "GUIDANCE",
+      "procedure": [
+        "冻结 thinking、输出预算、retry、scorer 与总分母。",
+        "从现行合同生成门禁；Feature 条件启用与输出文本相似度退役分别处理。"
+      ],
+      "required_evidence": [
+        "不可变质量合同",
+        "逐样本终态与计分理由"
+      ],
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "M03",
+      "level": 2,
+      "parent_id": "K02",
+      "title": "拆因果关键路径与真实 P/D 路由",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "method",
+      "status": "GUIDANCE",
+      "procedure": [
+        "按请求和 token ordinal 关联事件，区分就绪等待、计算、传输、同步。",
+        "核对时钟和 profiler 开销；P/D 逐请求证明 Router→P→connector→D。"
+      ],
+      "required_evidence": [
+        "trace 关联键/时钟范围",
+        "非采样正式计时",
+        "KV 传输和加载证据"
+      ],
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "M04",
+      "level": 2,
+      "parent_id": "K02",
+      "title": "估计收益上界并决定分支止损",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "method",
+      "status": "GUIDANCE",
+      "procedure": [
+        "将 Amdahl/逐 shape oracle 上界与 E2E 方差、目标差距和实现成本比较。",
+        "收益不足则归档停止；集成后重验并保留可回退基线。"
+      ],
+      "required_evidence": [
+        "上界估算假设",
+        "重复测量与噪声",
+        "分支决策记录"
+      ],
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "M05",
+      "level": 2,
+      "parent_id": "K03",
+      "title": "生产 shape、阶段 dispatch 与单 shape warmup",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "method",
+      "status": "GUIDANCE",
+      "procedure": [
+        "从真实 trace 提取 shape/dtype/stride/tail、阶段和分布。",
+        "按有效合同固定缓存政策、唯一 warmup 与请求顺序，检查各长度和 C1→C4 曲线。"
+      ],
+      "required_evidence": [
+        "shape 分布与 dispatch",
+        "forward ledger",
+        "逐 shape/并发 TTFT 与 TPOT"
+      ],
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "M06",
+      "level": 2,
+      "parent_id": "K03",
+      "title": "峰值显存与 Graph 双路径验收",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "method",
+      "status": "GUIDANCE",
+      "procedure": [
+        "核算权重、KV、临时 workspace、activation、Graph 与 allocator 峰值。",
+        "分别验证 capture、replay、eager 与最大上下文/并发，保留安全余量。"
+      ],
+      "required_evidence": [
+        "峰值分配/释放轨迹",
+        "Graph 与非 Graph 结果",
+        "容量和性能复验"
+      ],
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "M07",
+      "level": 2,
+      "parent_id": "K04",
+      "title": "投机解码与远端 KV 的状态机验证",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "method",
+      "status": "GUIDANCE",
+      "procedure": [
+        "定义 KV 就绪、token 追加、verify/correction 和返回的状态转移。",
+        "按 request+ordinal/step 检查跨 PP 一致性，并覆盖长输出、拒绝回退和请求加入/退出。"
+      ],
+      "required_evidence": [
+        "跨阶段状态 trace",
+        "target verification 与 acceptance",
+        "生命周期回归"
+      ],
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "M08",
+      "level": 2,
+      "parent_id": "K04",
+      "title": "可复用 Batch/KV 的有效边界与来源隔离",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "method",
+      "status": "GUIDANCE",
+      "procedure": [
+        "分离内容有效 span、计算进度和 speculative span；检查 move/condense/换请求。",
+        "KV 复用记录 producer provenance；区分 real/pad query 并逐层证明输出因果。"
+      ],
+      "required_evidence": [
+        "row/request 映射和有效长度",
+        "KV producer/runtime 指纹",
+        "real/pad 与输出反事实"
+      ],
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "M09",
+      "level": 2,
+      "parent_id": "K05",
+      "title": "API 对账、预算与一次 admission",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "method",
+      "status": "GUIDANCE",
+      "procedure": [
+        "用真实 tokenizer/processor 验证消息对象边界；对账 metrics 与 usage。",
+        "输入长度、有效输出预算先算后预留；重试需当前合同允许，终态先停上游再释放一次。"
+      ],
+      "required_evidence": [
+        "API 输入/输出与真实计数",
+        "reservation/attempt 账本",
+        "取消与失败路径"
+      ],
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "M10",
+      "level": 2,
+      "parent_id": "K05",
+      "title": "稳定性回放与精确服务生命周期",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "method",
+      "status": "GUIDANCE",
+      "procedure": [
+        "按当前合同冻结 1200 纯文本；具备图文能力时额外冻结 1200 随机插图样本。",
+        "Backend adapter 用 run/trial 与平台服务身份隔离日志、PID、admission 和 stop 产物。"
+      ],
+      "required_evidence": [
+        "冻结样本/随机种子/图片身份",
+        "逐请求终态",
+        "平台身份与精确清理证据"
+      ],
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "M11",
+      "level": 2,
+      "parent_id": "K06",
+      "title": "身份、合同版本、候选阶段与最终复验",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "method",
+      "status": "GUIDANCE",
+      "procedure": [
+        "将源码、镜像、runtime、负载和合同绑定到每份结果。",
+        "缺少或不匹配身份时拒绝进入正式比较；候选 PASS 与最终镜像复验分别记录。"
+      ],
+      "required_evidence": [
+        "身份 Manifest",
+        "阶段与合同版本",
+        "最终产物的新 trial 结果"
+      ],
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "M12",
+      "level": 2,
+      "parent_id": "K06",
+      "title": "失败分型与因果证据审查",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "method",
+      "status": "GUIDANCE",
+      "procedure": [
+        "先区分 unsupported、部署失败、无效测量、有效回退和质量失败。",
+        "把危险前置条件、状态污染、真实采样和输出异常分层证明；缺失 raw 与未闭环项明确列出。"
+      ],
+      "required_evidence": [
+        "失败阶段/类别",
+        "正反例与未排除因素",
+        "因果链和待补证清单"
+      ],
+      "evidence_boundary": {
+        "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。"
+        ]
+      }
+    },
+    {
+      "id": "R01",
+      "level": 3,
+      "parent_id": "M05",
+      "title": "按真实生产 shape 分布调优，不能只优化一个 micro case",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "先从真实 trace 提取 M/N、dtype、stride、tail、请求与阶段分布；在该分布和真实 E2E 上比较。保留小/大 shape 的 dispatch 边界，不用单一合成 shape 的提升决定集成。",
+      "scenario": "包含长 prefill、尾块和多 backend 的模型",
+      "source_ids": [
+        "cross:S01",
+        "cross:S02"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "包含长 prefill、尾块和多 backend 的模型",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "具体 tile、group 阈值和 shape 清单只适用于原模型/版本，不做新模型默认。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "细化已有局部/E2E 门禁，新增生产 shape 分布及 dispatch 的操作要求。",
+      "priority": 0
+    },
+    {
+      "id": "case:R01",
+      "level": 4,
+      "parent_id": "R01",
+      "title": "按真实生产 shape 分布调优，不能只优化一个 micro case：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_1",
+          "glm-5.1",
+          "GLM-5.1",
+          "GLM-5.1-FP8",
+          "GLM-5.1-NVFP4"
+        ]
+      },
+      "requires_capabilities": [],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "GLM-5.1 NVFP4 的 Sparse MLA micro 改善后，50K TTFT 反而达到 36.211/36.786s，劣于该轮约 34.994s 的基准。",
+        "实际 MQA chunk 包含 (503,50005) 等不整齐形状；v7 相对 v5 在 50K micro 更快，但在 138K micro 没有更快。"
+      ],
+      "source_ids": [
+        "cross:S01",
+        "cross:S02"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "包含长 prefill、尾块和多 backend 的模型",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "具体 tile、group 阈值和 shape 清单只适用于原模型/版本，不做新模型默认。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R01"
+    },
+    {
+      "id": "R02",
+      "level": 3,
+      "parent_id": "M06",
+      "title": "显存预算同时覆盖 KV 与临时 workspace，KV 预留不是越大越好",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "按峰值核算权重、KV、logits/indices、activation、graph 与 allocator 缓存；稀疏结构优先按实际 nnz 紧凑存储，并在满足目标上下文/并发后给 workspace 留余量。",
+      "scenario": "稀疏注意力、长上下文及分组 logits kernel",
+      "source_ids": [
+        "cross:S01",
+        "cross:S03",
+        "cross:S04"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "稀疏注意力、长上下文及分组 logits kernel",
+        "causal_status": "COMBINED_CHANGE_NOT_ATTRIBUTED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "不能从组合修复推导某个固定 KV GB 数的单项收益，也不能把首个 warmup 与 hot 请求做直接速度比。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "补充此前 warmup/JIT 经验未覆盖的长上下文容量与临时内存峰值。",
+      "priority": 0
+    },
+    {
+      "id": "case:R02",
+      "level": 4,
+      "parent_id": "R02",
+      "title": "显存预算同时覆盖 KV 与临时 workspace，KV 预留不是越大越好：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_1",
+          "glm-5.1",
+          "GLM-5.1",
+          "GLM-5.1-FP8",
+          "GLM-5.1-NVFP4",
+          "deepseek_v4",
+          "deepseek_v4_flash",
+          "deepseek-v4-flash",
+          "DeepSeek-V4-Flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "GLM-5.1 的 group32 micro 变快，但实际请求触发约 3/8GiB 临时 score 分配而 OOM；限制 workspace 后又发生速度回退。",
+        "V4-Flash 的 768K 大 KV 配置在 sparse ragged index 构造中 OOM；1M 最终通过配置同时使用 compact ragged、graphfix 与较小 KV 预留。"
+      ],
+      "source_ids": [
+        "cross:S01",
+        "cross:S03",
+        "cross:S04"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "稀疏注意力、长上下文及分组 logits kernel",
+        "causal_status": "COMBINED_CHANGE_NOT_ATTRIBUTED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "不能从组合修复推导某个固定 KV GB 数的单项收益，也不能把首个 warmup 与 hot 请求做直接速度比。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R02"
+    },
+    {
+      "id": "R03",
+      "level": 3,
+      "parent_id": "M06",
+      "title": "CUDA Graph capture 与正常执行是两条都要验证的路径",
+      "applies_to": {},
+      "requires_capabilities": [
+        "cuda_graph"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "对动态标量读取、分配、地址/shape 依赖逐项审查 capture-safe 条件。分别测试 capture、replay、非 graph 与最大内存路径，不以 eager 的正确性替代 graph 验收。",
+      "scenario": "动态 shape、动态长度或稀疏索引优化",
+      "source_ids": [
+        "cross:S03",
+        "cross:S04"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "动态 shape、动态长度或稀疏索引优化",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "旧修复的 dense-width fallback 不是所有新模型的默认；仍要防止该 fallback 造成 OOM。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "新增捕获状态与执行状态的显式分支验收，区别于现有推理期 JIT 检查。",
+      "priority": 0
+    },
+    {
+      "id": "case:R03",
+      "level": 4,
+      "parent_id": "R03",
+      "title": "CUDA Graph capture 与正常执行是两条都要验证的路径：历史案例",
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4",
+          "deepseek_v4_flash",
+          "deepseek-v4-flash",
+          "DeepSeek-V4-Flash"
+        ]
+      },
+      "requires_capabilities": [
+        "cuda_graph"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "V4-Flash 1M compact-ragged 首次版本在 capture 内使用 .item() 导致启动失败；graphfix 对捕获路径保留静态宽度，正常执行使用紧凑结构，后续通过。"
+      ],
+      "source_ids": [
+        "cross:S03",
+        "cross:S04"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "动态 shape、动态长度或稀疏索引优化",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "旧修复的 dense-width fallback 不是所有新模型的默认；仍要防止该 fallback 造成 OOM。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R03"
+    },
+    {
+      "id": "R04",
+      "level": 3,
+      "parent_id": "M05",
+      "title": "Prefill 与 Decode 的 kernel 参数需要分阶段选择",
+      "applies_to": {},
+      "requires_capabilities": [
+        "sparse_attention"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "调度参数、split-KV、tile、workspace 与 backend dispatch 以真实执行阶段和 shape 为条件；每个阶段独立验证后再测完整请求。",
+      "scenario": "同一 sparse MLA/MQA kernel 覆盖 prefill 和 decode",
+      "source_ids": [
+        "cross:S01"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "同一 sparse MLA/MQA kernel 覆盖 prefill 和 decode",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "不能把 split-KV、特定 block size 或 eager/graph 的胜负推广到所有模型。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "把局部快而整体慢进一步拆解为阶段参数相互冲突。",
+      "priority": 0
+    },
+    {
+      "id": "case:R04",
+      "level": 4,
+      "parent_id": "R04",
+      "title": "Prefill 与 Decode 的 kernel 参数需要分阶段选择：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_1",
+          "glm-5.1",
+          "GLM-5.1",
+          "GLM-5.1-FP8",
+          "GLM-5.1-NVFP4"
+        ]
+      },
+      "requires_capabilities": [
+        "sparse_attention"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "GLM-5.1 记录显示强制 split-KV 对 decode micro 有利，但 prefill_512 从约 3.667ms 退化到 7.6–8.0ms。"
+      ],
+      "source_ids": [
+        "cross:S01"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "同一 sparse MLA/MQA kernel 覆盖 prefill 和 decode",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "不能把 split-KV、特定 block size 或 eager/graph 的胜负推广到所有模型。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R04"
+    },
+    {
+      "id": "R05",
+      "level": 3,
+      "parent_id": "M01",
+      "title": "功能开关不代表可用，先建立精确 backend 能力矩阵",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "在启动前核对 模型结构×GPU 架构×attention 类型×dtype×backend/version×TP/PP/MTP 的组合，并用实际路径 smoke 证明。Unsupported 与性能不佳分别记录。",
+      "scenario": "新模型、新 GPU、新 KV dtype 或 PP+MTP 组合",
+      "source_ids": [
+        "cross:S05",
+        "cross:S10"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "新模型、新 GPU、新 KV dtype 或 PP+MTP 组合",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "仅证明当时版本的 GLM 路径不支持，不意味着所有 SM80 模型均不支持 FP8 KV。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "细化已有部署失败分类，增加结构化能力矩阵。",
+      "priority": 0
+    },
+    {
+      "id": "case:R05",
+      "level": 4,
+      "parent_id": "R05",
+      "title": "功能开关不代表可用，先建立精确 backend 能力矩阵：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_1",
+          "glm-5.1",
+          "GLM-5.1",
+          "GLM-5.1-FP8",
+          "GLM-5.1-NVFP4"
+        ]
+      },
+      "requires_capabilities": [],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "GLM-5.1-FP8 Stage55 的 --kv-cache-dtype=fp8 进入配置后仍无可用 sparse MLA backend；SM80 路径不满足另一后端的架构要求。",
+        "较早 P/D 测试也在该 GLM sparse MLA 组合上遇到同类 backend-selection 拒绝。"
+      ],
+      "source_ids": [
+        "cross:S05",
+        "cross:S10"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "新模型、新 GPU、新 KV dtype 或 PP+MTP 组合",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "仅证明当时版本的 GLM 路径不支持，不意味着所有 SM80 模型均不支持 FP8 KV。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R05"
+    },
+    {
+      "id": "R06",
+      "level": 3,
+      "parent_id": "M04",
+      "title": "先比较可实现收益上界、测量噪声和目标差距，再投入深度调优",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "把理论或 oracle 上界与真实关键路径、试验方差、剩余目标差距一起评估；收益不足时归档并结束分支，不为微小局部数值持续扩张实现复杂度。",
+      "scenario": "kernel 参数搜索和 shape-dependent dispatch",
+      "source_ids": [
+        "cross:S21",
+        "cross:S22"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "kernel 参数搜索和 shape-dependent dispatch",
+        "causal_status": "SEARCH_UPPER_BOUND_NOT_MEASURED_GAIN",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "不能把所有 kernel 都设置相同毫秒阈值；噪声与收益下限取当前合同和重复测量。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "补充现有 Amdahl 排序所需的收益可信度与止损依据。",
+      "priority": 0
+    },
+    {
+      "id": "case:R06",
+      "level": 4,
+      "parent_id": "R06",
+      "title": "先比较可实现收益上界、测量噪声和目标差距，再投入深度调优：历史案例",
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4",
+          "deepseek_v4_flash",
+          "deepseek-v4-flash",
+          "DeepSeek-V4-Flash"
+        ]
+      },
+      "requires_capabilities": [],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "V4-Flash probe191 的理想逐 shape oracle 也只可能回收约 4.69/1.69ms，低于 endpoint 变动量，决策为 REJECT_NO_ACTIONABLE_ENDPOINT_GAIN。",
+        "probe190 在两张关键 GPU 上搜索后仍是当前配置最好，未改生产源码。"
+      ],
+      "source_ids": [
+        "cross:S21",
+        "cross:S22"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "kernel 参数搜索和 shape-dependent dispatch",
+        "causal_status": "SEARCH_UPPER_BOUND_NOT_MEASURED_GAIN",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "不能把所有 kernel 都设置相同毫秒阈值；噪声与收益下限取当前合同和重复测量。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R06"
+    },
+    {
+      "id": "R07",
+      "level": 3,
+      "parent_id": "M03",
+      "title": "NCCL/recv 很长可能是等待，最大瓶颈应按依赖关键路径定位",
+      "applies_to": {},
+      "requires_capabilities": [
+        "pp"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "把源端发出、目标端就绪、实际传输、计算和同步等待拆开；只有改变关键依赖链的候选才预期产生 E2E 收益，不把长 recv 或 cudaGraphLaunch 全算成网络带宽/Python 开销。",
+      "scenario": "PP、异步调度、跨 rank 接收",
+      "source_ids": [
+        "cross:S07",
+        "cross:S08"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "PP、异步调度、跨 rank 接收",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "该结论不否认真实网络瓶颈；需按当前拓扑重新分解。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "细化最大瓶颈点路由，避免仅按累计 GPU kernel 排名选方向。",
+      "priority": 0
+    },
+    {
+      "id": "case:R07",
+      "level": 4,
+      "parent_id": "R07",
+      "title": "NCCL/recv 很长可能是等待，最大瓶颈应按依赖关键路径定位：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_1",
+          "glm-5.1",
+          "GLM-5.1",
+          "GLM-5.1-FP8",
+          "GLM-5.1-NVFP4"
+        ]
+      },
+      "requires_capabilities": [
+        "pp"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "GLM-5.1-FP8 trace 中源端 sampled-token broadcast kernel 约 0.024ms，而接收端约 71ms；报告将主要时间归于 readiness wait。",
+        "PP0 cudaGraphLaunch 均值约 65.86ms，其中约 65.01ms 与 NCCL broadcast 重叠。"
+      ],
+      "source_ids": [
+        "cross:S07",
+        "cross:S08"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "PP、异步调度、跨 rank 接收",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "该结论不否认真实网络瓶颈；需按当前拓扑重新分解。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R07"
+    },
+    {
+      "id": "R08",
+      "level": 3,
+      "parent_id": "M03",
+      "title": "Profiler 的关联键、时钟和正式计时必须分清",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "用进程/设备/相关 ID 和请求 ordinal 关联事件；无统一时钟时用因果顺序和同机区间。Profile 用来归因，正式性能用同合同的非采样测量。",
+      "scenario": "多进程、多机 Nsight trace 与有采样开销的实验",
+      "source_ids": [
+        "cross:S07",
+        "cross:S08",
+        "cross:S23"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "多进程、多机 Nsight trace 与有采样开销的实验",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "未独立重算整份 Nsight SQLite；本轮核对的是原报告的方法与结果。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "新增 trace 证据处理方法，补强已有身份与计时规则。",
+      "priority": 0
+    },
+    {
+      "id": "case:R08",
+      "level": 4,
+      "parent_id": "R08",
+      "title": "Profiler 的关联键、时钟和正式计时必须分清：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_1",
+          "glm-5.1",
+          "GLM-5.1",
+          "GLM-5.1-FP8",
+          "GLM-5.1-NVFP4"
+        ]
+      },
+      "requires_capabilities": [],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "PP 分析明确只对同机计算绝对时间差，不直接相减两次跨节点 capture 的绝对时间。",
+        "graph/API 关联同时使用 worker pid 与 correlationId，因为 correlationId 可跨进程重复。",
+        "GLM-5.1 正式 TTFT 为 9984.71ms，profile run 为 10162.18ms；目标判定使用前者。"
+      ],
+      "source_ids": [
+        "cross:S07",
+        "cross:S08",
+        "cross:S23"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "多进程、多机 Nsight trace 与有采样开销的实验",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "未独立重算整份 Nsight SQLite；本轮核对的是原报告的方法与结果。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R08"
+    },
+    {
+      "id": "R09",
+      "level": 3,
+      "parent_id": "M03",
+      "title": "P/D 必须证明真实路由，并分解 KV 传输/激活至首 token 的开销",
+      "applies_to": {},
+      "requires_capabilities": [
+        "pd_disaggregation"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "逐请求串起 Router→P→KV connector→D，保存 KV 参数/传输与实际加载证据；拆分 prefill、remote KV 等待/激活、first decode。不能仅凭 endpoint 可用或网卡有流量认定 P/D 有效或高速。",
+      "scenario": "1P1D、2P1D、Router 或 connector 更换",
+      "source_ids": [
+        "cross:S09",
+        "cross:S10"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "1P1D、2P1D、Router 或 connector 更换",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "decode_first interval 含多种开销，不能把整个区间都称为纯网线传输；链路吞吐不能从配置带宽推算。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "新增真实 P/D 路由与归因要求，区别于现有 admission 预算规则。",
+      "priority": 0
+    },
+    {
+      "id": "case:R09",
+      "level": 4,
+      "parent_id": "R09",
+      "title": "P/D 必须证明真实路由，并分解 KV 传输/激活至首 token 的开销：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_1",
+          "glm-5.1",
+          "GLM-5.1",
+          "GLM-5.1-FP8",
+          "GLM-5.1-NVFP4"
+        ]
+      },
+      "requires_capabilities": [
+        "pd_disaggregation"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "GLM-5.1 真 P/D 测量中 prefill 后至首 decode 仍约 1.6–1.8s；多 HCA 确有约 9.4GB 流量，仍不足以达到目标。",
+        "sglang_router 对该 vLLM 路径未提供正式 kv_transfer_params，结果只被当作 diagnostic；直接 Decode 也不算 P/D 正式结果。"
+      ],
+      "source_ids": [
+        "cross:S09",
+        "cross:S10"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "1P1D、2P1D、Router 或 connector 更换",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "decode_first interval 含多种开销，不能把整个区间都称为纯网线传输；链路吞吐不能从配置带宽推算。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R09"
+    },
+    {
+      "id": "R10",
+      "level": 3,
+      "parent_id": "M01",
+      "title": "模型结构性适配先于性能，IndexShare 的复用范围必须明确",
+      "applies_to": {},
+      "requires_capabilities": [
+        "index_share"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "从实际 config/权重/forward 确认哪些层计算、哪些层共享，并绑定请求、层、step 和缓冲区生命周期。先把结构正确性修复作为单独 baseline 版本，再冻结 oracle，不能在优化中悄悄替换参考。",
+      "scenario": "具有共享 indexer/top-k 或跨 MTP iteration 复用能力的模型",
+      "source_ids": [
+        "cross:S11"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "具有共享 indexer/top-k 或跨 MTP iteration 复用能力的模型",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "仅用于有对应能力的模型；联合 RDMA+IndexShare+MTP 结果不能分摊为单项收益。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "深化 C02，拆出可执行的结构适配与参考版本边界。",
+      "priority": 0
+    },
+    {
+      "id": "case:R10",
+      "level": 4,
+      "parent_id": "R10",
+      "title": "模型结构性适配先于性能，IndexShare 的复用范围必须明确：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_2",
+          "glm-5.2",
+          "GLM-5.2"
+        ]
+      },
+      "requires_capabilities": [
+        "index_share"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "GLM-5.2 按 indexer_types 区分完整 Indexer 与 SharedTopKIndexer，避免为共享层加载不存在的权重。",
+        "无正确 IndexShare 的旧 Feature 参考被归档，在结构正确的 baseline 上重新固定；最终优化还涉及后续 MTP pass 的 top-k 复用。"
+      ],
+      "source_ids": [
+        "cross:S11"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "具有共享 indexer/top-k 或跨 MTP iteration 复用能力的模型",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "仅用于有对应能力的模型；联合 RDMA+IndexShare+MTP 结果不能分摊为单项收益。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R10"
+    },
+    {
+      "id": "R11",
+      "level": 3,
+      "parent_id": "M07",
+      "title": "远端 KV 首 token 状态与 MTP draft 启动必须分开处理",
+      "applies_to": {},
+      "requires_capabilities": [
+        "pd_disaggregation",
+        "mtp",
+        "pp"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "显式定义 KV 就绪、token 已追加、token 已验证、token 已返回等状态，用正确阶段控制首 draft。同步测 TTFT、TPOT 和 acceptance，避免以减少首 token 延迟破坏后续投机协议。",
+      "scenario": "remote-KV + MTP + PP",
+      "source_ids": [
+        "cross:S12"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "remote-KV + MTP + PP",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "output_len<=1 是当时实现的修复条件，不作为所有框架的通用代码。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "新增首 token 状态机经验，区别于既有 target-verification 原则。",
+      "priority": 0
+    },
+    {
+      "id": "case:R11",
+      "level": 4,
+      "parent_id": "R11",
+      "title": "远端 KV 首 token 状态与 MTP draft 启动必须分开处理：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_1",
+          "glm-5.1",
+          "GLM-5.1",
+          "GLM-5.1-FP8",
+          "GLM-5.1-NVFP4"
+        ]
+      },
+      "requires_capabilities": [
+        "pd_disaggregation",
+        "mtp",
+        "pp"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "GLM-5.1 Stage62 中 token_1 已追加，但 num_computed_tokens 仍落后于 prompt；旧 skip-first 条件漏判，首 token 返回前仍做 draft。",
+        "报告记录修复后 c1/c2 进入通过范围，并保留 target 验证与实际 acceptance 统计。"
+      ],
+      "source_ids": [
+        "cross:S12"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "remote-KV + MTP + PP",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "output_len<=1 是当时实现的修复条件，不作为所有框架的通用代码。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R11"
+    },
+    {
+      "id": "R12",
+      "level": 3,
+      "parent_id": "M07",
+      "title": "MTP 通过短 smoke 不代表长输出生命周期正确",
+      "applies_to": {},
+      "requires_capabilities": [
+        "mtp"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "把多轮 draft/verify、拒绝回退、长输出、请求完成/释放、并发与新请求加入作为完整用例；不能在 1–4 token smoke 后直接宣布支持 PP+MTP。",
+      "scenario": "speculative decoding、PP broadcast、scheduler 修改",
+      "source_ids": [
+        "cross:S05",
+        "cross:S06"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "speculative decoding、PP broadcast、scheduler 修改",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "这些是当时候选的失败，不代表后续版本或该算法永远不可用。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "新增投机生命周期覆盖要求，补充普通质量/吞吐用例。",
+      "priority": 0
+    },
+    {
+      "id": "case:R12",
+      "level": 4,
+      "parent_id": "R12",
+      "title": "MTP 通过短 smoke 不代表长输出生命周期正确：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_1",
+          "glm-5.1",
+          "GLM-5.1",
+          "GLM-5.1-FP8",
+          "GLM-5.1-NVFP4"
+        ]
+      },
+      "requires_capabilities": [
+        "mtp"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "GLM-5.1 MTP 可完成 50K/4-token smoke；正式 256-token 输出变成 [10,0,0,0,0]，64-token probe 也在 18/21 token 附近失败。",
+        "原始 Decode 日志可查 sample_tokens RPC timeout 和 EngineDeadError。"
+      ],
+      "source_ids": [
+        "cross:S05",
+        "cross:S06"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "speculative decoding、PP broadcast、scheduler 修改",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "这些是当时候选的失败，不代表后续版本或该算法永远不可用。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R12"
+    },
+    {
+      "id": "R13",
+      "level": 3,
+      "parent_id": "M07",
+      "title": "同请求同 token ordinal 的 accepted-count/correction 在 PP stage 间须一致",
+      "applies_to": {},
+      "requires_capabilities": [
+        "pp",
+        "mtp",
+        "async_scheduling"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "用 request_id+token ordinal/step_id 比较各 stage 的 verifier 结果、correction、position 和 KV cursor；覆盖部分接受、拒绝、async 延迟和状态复用。不要比较不同墙钟时刻的 rank 瞬时值来误判。",
+      "scenario": "具备多阶段 Target verifier 与异步 speculative correction 的实现",
+      "source_ids": [
+        "cross:S13"
+      ],
+      "evidence_boundary": {
+        "basis": "历史代码因果审阅；未独立重跑",
+        "claim_scope": "具备多阶段 Target verifier 与异步 speculative correction 的实现",
+        "causal_status": "CODE_PATH_SUPPORTED_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "本轮依据报告中的代码因果分析，没有独立重放全部历史字符损坏请求；不把它写成所有事故的唯一根因。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "新增跨 rank 状态不变量，适用范围严格按能力匹配。",
+      "priority": 0
+    },
+    {
+      "id": "case:R13",
+      "level": 4,
+      "parent_id": "R13",
+      "title": "同请求同 token ordinal 的 accepted-count/correction 在 PP stage 间须一致：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_2",
+          "glm-5.2",
+          "GLM-5.2"
+        ]
+      },
+      "requires_capabilities": [
+        "pp",
+        "mtp",
+        "async_scheduling"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "GLM-5.2 审阅报告把陈旧 accepted count 导致不同 PP stage correction 分叉，关联到 position/RoPE/KV/Target logits 状态不一致。"
+      ],
+      "source_ids": [
+        "cross:S13"
+      ],
+      "evidence_boundary": {
+        "basis": "历史代码因果审阅；未独立重跑",
+        "claim_scope": "具备多阶段 Target verifier 与异步 speculative correction 的实现",
+        "causal_status": "CODE_PATH_SUPPORTED_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "本轮依据报告中的代码因果分析，没有独立重放全部历史字符损坏请求；不把它写成所有事故的唯一根因。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R13"
+    },
+    {
+      "id": "R14",
+      "level": 3,
+      "parent_id": "M08",
+      "title": "persistent row 的有效内容长度不能被 chunk 计算进度覆盖",
+      "applies_to": {},
+      "requires_capabilities": [
+        "persistent_batch",
+        "chunked_prefill"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "为有效内容、已计算进度、speculative span 分别定义字段；同请求未完成内容不得因局部进度被缩短。搬行必须复制有效 span 并同步 request 映射；换请求时重新初始化生命周期。",
+      "scenario": "persistent batch、condense/move/swap、chunked prefill",
+      "source_ids": [
+        "cross:S14",
+        "cross:S13"
+      ],
+      "evidence_boundary": {
+        "basis": "历史代码机制审阅；未独立重跑",
+        "claim_scope": "persistent batch、condense/move/swap、chunked prefill",
+        "causal_status": "CODE_PATH_SUPPORTED_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "不是要求所有长度都单调增加：MTP rollback 和请求结束/重分配有不同语义，不能一律使用 max() 掩盖问题。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "新增可复用的 batch-state 不变量，具体字节和 bucket 不作为默认。",
+      "priority": 0
+    },
+    {
+      "id": "case:R14",
+      "level": 4,
+      "parent_id": "R14",
+      "title": "persistent row 的有效内容长度不能被 chunk 计算进度覆盖：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_2",
+          "glm-5.2",
+          "GLM-5.2"
+        ]
+      },
+      "requires_capabilities": [
+        "persistent_batch",
+        "chunked_prefill"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "GLM-5.2 报告区分真实 prompt 40957、bucket active span 92160 和 computed prefix 2048。",
+        "错误把 active span 92160 写成 2048，condense 仅复制短前缀，目标 row 余段保留旧请求内容。"
+      ],
+      "source_ids": [
+        "cross:S14",
+        "cross:S13"
+      ],
+      "evidence_boundary": {
+        "basis": "历史代码机制审阅；未独立重跑",
+        "claim_scope": "persistent batch、condense/move/swap、chunked prefill",
+        "causal_status": "CODE_PATH_SUPPORTED_NOT_REPLAYED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "不是要求所有长度都单调增加：MTP rollback 和请求结束/重分配有不同语义，不能一律使用 max() 掩盖问题。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R14"
+    },
+    {
+      "id": "R15",
+      "level": 3,
+      "parent_id": "M08",
+      "title": "跨 Prefill producer 的 KV 复用必须先证明轨迹可互换",
+      "applies_to": {},
+      "requires_capabilities": [
+        "multi_prefill_producer",
+        "pd_disaggregation",
+        "prefix_cache"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "给 KV identity 记录 producer/runtime/config provenance；未证明可互换前隔离或保持 producer affinity。验证 Same/Cross、cold/warm、prefix/suffix 指纹和最终输出。",
+      "scenario": "多个 Prefill producer + Decode Prefix Cache + remote suffix",
+      "source_ids": [
+        "cross:S15"
+      ],
+      "evidence_boundary": {
+        "basis": "机制报告支持；输出因果尚未完全闭环",
+        "claim_scope": "多个 Prefill producer + Decode Prefix Cache + remote suffix",
+        "causal_status": "OUTPUT_CAUSALITY_OPEN",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "确认的是危险混合状态，不把所有字符损坏归因于它；输出闭环仍待补证。",
+          "不要求用 cache_salt 实现，也不改变现行正式零命中测速无 salt 的规则。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "新增跨 replica KV identity 要求，不与 C09 的未证实根因混淆。",
+      "priority": 0
+    },
+    {
+      "id": "case:R15",
+      "level": 4,
+      "parent_id": "R15",
+      "title": "跨 Prefill producer 的 KV 复用必须先证明轨迹可互换：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_2",
+          "glm-5.2",
+          "GLM-5.2"
+        ]
+      },
+      "requires_capabilities": [
+        "multi_prefill_producer",
+        "pd_disaggregation",
+        "prefix_cache"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "GLM-5.2 审阅报告确认可能组合 P0 local prefix 与 P1 remote suffix，且两 producer 的数值轨迹并非 bitwise 可交换。",
+        "审阅认可 producer-scoped namespace 能阻断混合，但仍指出输出级 same/cross 反事实与正式语义验收缺口。"
+      ],
+      "source_ids": [
+        "cross:S15"
+      ],
+      "evidence_boundary": {
+        "basis": "机制报告支持；输出因果尚未完全闭环",
+        "claim_scope": "多个 Prefill producer + Decode Prefix Cache + remote suffix",
+        "causal_status": "OUTPUT_CAUSALITY_OPEN",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "确认的是危险混合状态，不把所有字符损坏归因于它；输出闭环仍待补证。",
+          "不要求用 cache_salt 实现，也不改变现行正式零命中测速无 salt 的规则。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R15"
+    },
+    {
+      "id": "R16",
+      "level": 3,
+      "parent_id": "M02",
+      "title": "Thinking 模式与输出预算是质量合同，不能把截断直接归因数值精度",
+      "applies_to": {},
+      "requires_capabilities": [
+        "thinking"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "冻结 thinking、generation budget、retry 与 scorer；区分 transport、reasoning 截断、不可解析和答错，失败保留在总分母。修正合同后新测，不拼接补测或只报可解析子集。",
+      "scenario": "reasoning 模型与 GSM8K 等答案计分",
+      "source_ids": [
+        "cross:S16"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "reasoning 模型与 GSM8K 等答案计分",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "不自动把 768 或 128K 当新模型默认，也不因该原因豁免质量门禁。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "补充已有 GSM8K 接收超时和文本相似度退役经验，关注不同失败机制。",
+      "priority": 0
+    },
+    {
+      "id": "case:R16",
+      "level": 4,
+      "parent_id": "R16",
+      "title": "Thinking 模式与输出预算是质量合同，不能把截断直接归因数值精度：历史案例",
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4",
+          "deepseek_v4_flash",
+          "deepseek-v4-flash",
+          "DeepSeek-V4-Flash"
+        ]
+      },
+      "requires_capabilities": [
+        "thinking"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "V4-Flash 原 768-token、Thinking High 合同下 128 条长度截断且 final content 为空，整体正确率 1171/1319=88.7794%；可解析子集正确率 98.3207%。",
+        "原参考关闭 Thinking，不能直接作为同模式精度对照；后来 128K 的新合同与原不可变失败结论分别保存。"
+      ],
+      "source_ids": [
+        "cross:S16"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "reasoning 模型与 GSM8K 等答案计分",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "不自动把 768 或 128K 当新模型默认，也不因该原因豁免质量门禁。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R16"
+    },
+    {
+      "id": "R17",
+      "level": 3,
+      "parent_id": "M09",
+      "title": "工具消息必须覆盖 tokenizer 的真实对象/序列化边界",
+      "applies_to": {},
+      "requires_capabilities": [
+        "tools"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "对 text、tool definitions/history、多模态混合请求验证真实 tokenizer/processor 调用，明确各边界的输入类型和规范化方式；schema 能解析不等于可以 deepcopy/pickle 或编码。",
+      "scenario": "Pydantic、工具历史、lazy iterator 或跨进程处理",
+      "source_ids": [
+        "cross:S17"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "Pydantic、工具历史、lazy iterator 或跨进程处理",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "plain dict 是当时修复，不要求所有类型无条件转 dict；必须保留原协议语义。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "新增工具对象边界案例，区别于已有上下文/限流规则。",
+      "priority": 0
+    },
+    {
+      "id": "case:R17",
+      "level": 4,
+      "parent_id": "R17",
+      "title": "工具消息必须覆盖 tokenizer 的真实对象/序列化边界：历史案例",
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [
+        "tools"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "V4.1 r4 的真实工具回放在 admission 前触发 cannot pickle ValidatorIterator；前 101 次中 41 次 HTTP400。",
+        "缺陷报告将问题定位到 validated message 容器在转 plain dict 前被 deepcopy；修复后另建候选。"
+      ],
+      "source_ids": [
+        "cross:S17"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "Pydantic、工具历史、lazy iterator 或跨进程处理",
+        "causal_status": "HISTORICAL_RESULT_NOT_INDEPENDENTLY_REPRODUCED",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "plain dict 是当时修复，不要求所有类型无条件转 dict；必须保留原协议语义。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R17"
+    },
+    {
+      "id": "R18",
+      "level": 3,
+      "parent_id": "M09",
+      "title": "多模态 cache 同步错误若重试，必须有界且保持一次 admission",
+      "applies_to": {},
+      "requires_capabilities": [
+        "multimodal",
+        "pp"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "仅在当前合同允许且明确识别为可重试错误、尚未向客户端发送输出时有界重试；一个外部请求只有一次 reservation，每次 attempt 单独可追踪。不能对所有 500 盲重试、重复发送流或隐藏首次失败。",
+      "scenario": "PP 多模态 cache 与网关可重试上游错误",
+      "source_ids": [
+        "cross:S18"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "PP 多模态 cache 与网关可重试上游错误",
+        "causal_status": "MITIGATION_NOT_ROOT_FIX",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "一次重试成功只能证明缓解可能，不能声称根治 multimodal cache 同步；禁止把无重试合同静默改成有重试。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "补充现有终态释放规则中的 attempt 层级。",
+      "priority": 0
+    },
+    {
+      "id": "case:R18",
+      "level": 4,
+      "parent_id": "R18",
+      "title": "多模态 cache 同步错误若重试，必须有界且保持一次 admission：历史案例",
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4_1",
+          "deepseek_v4_1_flash",
+          "DeepSeek-V4.1-Flash",
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "requires_capabilities": [
+        "multimodal",
+        "pp"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "V4.1 r3 合法单图请求因 P0/P1 cache drift 返回 500，同 payload 重试后为 200。",
+        "缺陷报告要求保留一次外部 admission、关闭首 transport、保存两次 attempt，并在改变 gateway 后用新候选重跑。"
+      ],
+      "source_ids": [
+        "cross:S18"
+      ],
+      "evidence_boundary": {
+        "basis": "历史实测/正式报告",
+        "claim_scope": "PP 多模态 cache 与网关可重试上游错误",
+        "causal_status": "MITIGATION_NOT_ROOT_FIX",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "一次重试成功只能证明缓解可能，不能声称根治 multimodal cache 同步；禁止把无重试合同静默改成有重试。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R18"
+    },
+    {
+      "id": "R19",
+      "level": 3,
+      "parent_id": "M10",
+      "title": "部署产物必须按精确服务身份隔离，不能共用 PID/日志/停止标记",
+      "applies_to": {},
+      "requires_capabilities": [
+        "shared_storage"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "真实 Backend adapter 使用 run/trial+平台 training/Pod 身份隔离所有可变产物，启动映射原子发布；stop/snapshot 必须验证精确身份，失败清理不能误用另一个服务的文件。",
+      "scenario": "共享 NFS、多 training/Pod 并行运行",
+      "source_ids": [
+        "cross:S19"
+      ],
+      "evidence_boundary": {
+        "basis": "历史 NFS 集成与单测报告",
+        "claim_scope": "共享 NFS、多 training/Pod 并行运行",
+        "causal_status": "LOCAL_TEST_REPORT_ONLY",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "报告中的模拟 training ID 不是新真实模型实测；本轮没有执行部署或停止任务。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "KSEO 已有 run/trial 与资源租约；这里补充平台 adapter/NFS 的具体隔离验收。",
+      "priority": 0
+    },
+    {
+      "id": "case:R19",
+      "level": 4,
+      "parent_id": "R19",
+      "title": "部署产物必须按精确服务身份隔离，不能共用 PID/日志/停止标记：历史案例",
+      "applies_to": {
+        "model_family": [
+          "deepseek_v4",
+          "deepseek_v4_flash",
+          "deepseek-v4-flash",
+          "DeepSeek-V4-Flash"
+        ]
+      },
+      "requires_capabilities": [
+        "shared_storage"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "V4-Flash 部署改造将 serve、identity、admission、stop 等按 training_id 隔离；用两个 ID 写 8 类同名文件，路径无交集。",
+        "报告记录 NFS 集成 10/10、路径单测 4/4，nonce 到 training_id 映射原子发布。"
+      ],
+      "source_ids": [
+        "cross:S19"
+      ],
+      "evidence_boundary": {
+        "basis": "历史 NFS 集成与单测报告",
+        "claim_scope": "共享 NFS、多 training/Pod 并行运行",
+        "causal_status": "LOCAL_TEST_REPORT_ONLY",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "报告中的模拟 training ID 不是新真实模型实测；本轮没有执行部署或停止任务。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R19"
+    },
+    {
+      "id": "R20",
+      "level": 3,
+      "parent_id": "M08",
+      "title": "越界风险要检查真实请求边界；输出根因还须追到真实 query/采样行",
+      "applies_to": {},
+      "requires_capabilities": [
+        "sparse_attention"
+      ],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "边界检查使用请求有效 seq_len/num_blocks，probe 分离 real/pad query、KV 写入与最终 logits_indices。把危险前置条件、真实状态污染、输出异常分层证明，不从 padding 行最大值跳到串话根因。",
+      "scenario": "padding、Top-k、local-to-global block table 转换",
+      "source_ids": [
+        "cross:S20"
+      ],
+      "evidence_boundary": {
+        "basis": "边界机制代码审阅；输出因果未闭环",
+        "claim_scope": "padding、Top-k、local-to-global block table 转换",
+        "causal_status": "OUTPUT_CAUSALITY_OPEN",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "修复危险边界不等于已经证明历史输出根因；原审阅也说明部分事故 raw 不可访问。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "relation_to_existing": "深化已有 hypothesis 分类与 padding 语义要求，新增具体定位和边界检查方法。",
+      "priority": 0
+    },
+    {
+      "id": "case:R20",
+      "level": 4,
+      "parent_id": "R20",
+      "title": "越界风险要检查真实请求边界；输出根因还须追到真实 query/采样行：历史案例",
+      "applies_to": {
+        "model_family": [
+          "glm5_2",
+          "glm-5.2",
+          "GLM-5.2"
+        ]
+      },
+      "requires_capabilities": [
+        "sparse_attention"
+      ],
+      "kind": "historical_case",
+      "status": "HISTORICAL_CASE_NOT_RERUN",
+      "observations": [
+        "GLM-5.2 审阅发现 block table converter 按行 capacity 而非请求实际长度检查，尾槽风险值得修复。",
+        "但 max_local=14335 正好来自最后 padding query；最后真实 query 的合法上界是 13342，报告未证实真实采样行读取污染 KV。"
+      ],
+      "source_ids": [
+        "cross:S20"
+      ],
+      "evidence_boundary": {
+        "basis": "边界机制代码审阅；输出因果未闭环",
+        "claim_scope": "padding、Top-k、local-to-global block table 转换",
+        "causal_status": "OUTPUT_CAUSALITY_OPEN",
+        "revalidated_in_kseo": false,
+        "identity_coverage": "本索引未完整结构化原 GPU、backend commit、拓扑和全部负载；模型/能力匹配只表示案例相关，不代表完整迁移资格。",
+        "source_review": "抽查正式报告、代码机制说明及部分原始日志；非全量日志逐行复核。",
+        "not_established": [
+          "修复危险边界不等于已经证明历史输出根因；原审阅也说明部分事故 raw 不可访问。",
+          "本次仅整理历史知识，未重跑 GPU；迁移建议须在当前合同和实际 runtime 上验证。"
+        ]
+      },
+      "original_candidate_id": "R20"
+    },
+    {
+      "id": "E01",
+      "level": 3,
+      "parent_id": "M11",
+      "title": "运行身份与计时口径不匹配时，正式比较无效",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "max_num_seqs、拓扑、源码、镜像、负载及计时口径都属于结果身份；未知字段保留证据不足，不能补成默认通过。",
+      "evidence_boundary": {
+        "basis": "LEGACY_SUMMARIES_AND_V41_HISTORICAL_RECORDS",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。",
+          "所引原有 C 系列摘要无逐卡直接文件 hash；具体历史状态与缺口须下钻案例。"
+        ]
+      },
+      "priority": 0
+    },
+    {
+      "id": "E02",
+      "level": 3,
+      "parent_id": "M11",
+      "title": "候选通过后仍需最终不可变产物复验",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "记录 stage 与 contract_version；最终镜像/runtime、完整 speed/API/稳定性必须按有效合同另行验收，不能由候选 PASS 代替。",
+      "evidence_boundary": {
+        "basis": "LEGACY_SUMMARIES_AND_V41_HISTORICAL_RECORDS",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。",
+          "所引原有 C 系列摘要无逐卡直接文件 hash；具体历史状态与缺口须下钻案例。"
+        ]
+      },
+      "priority": 0
+    },
+    {
+      "id": "E03",
+      "level": 3,
+      "parent_id": "M12",
+      "title": "加载或环境失败不作为有效性能负分",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "按实际失败阶段归档 deployment/unsupported/invalid/performance；先消除拓扑污染与依赖问题，再讨论性能胜负。",
+      "evidence_boundary": {
+        "basis": "LEGACY_SUMMARIES_AND_V41_HISTORICAL_RECORDS",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "NOT_A_UNIVERSAL_CAUSAL_PROOF",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "概括层不能证明任意模型、GPU 或版本已有收益。",
+          "案例归类用于导航，不能把所有子案例视为对父节点每个子句的独立证明。",
+          "所引原有 C 系列摘要无逐卡直接文件 hash；具体历史状态与缺口须下钻案例。"
+        ]
+      },
+      "priority": 0
+    },
+    {
+      "id": "E04",
+      "level": 3,
+      "parent_id": "M12",
+      "title": "事故假设必须与机制证明和输出根因分开",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "transfer_rule",
+      "status": "TRANSFER_REQUIRES_VALIDATION",
+      "summary": "精确实例日志、状态污染路径和输出级反事实缺失时保留假设状态，不把怀疑对象写成所有事故的已证实根因。",
+      "evidence_boundary": {
+        "basis": "LEGACY_SUMMARY_HYPOTHESIS_ONLY",
+        "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
+        "causal_status": "HYPOTHESIS_NOT_CONFIRMED",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "原 C09 是初步怀疑，缺少直接事故实例证据和逐卡原文件 SHA256；只能指导排查，不能认定根因。"
+        ]
+      },
+      "priority": 0
+    }
+  ],
+  "legacy_links": [
+    {
+      "id": "V41-P01",
+      "level": 3,
+      "parent_id": "M05",
+      "record": "v41_policy"
+    },
+    {
+      "id": "V41-P02",
+      "level": 3,
+      "parent_id": "M05",
+      "record": "v41_policy"
+    },
+    {
+      "id": "V41-P03",
+      "level": 3,
+      "parent_id": "M05",
+      "record": "v41_policy"
+    },
+    {
+      "id": "V41-P04",
+      "level": 3,
+      "parent_id": "M05",
+      "record": "v41_policy"
+    },
+    {
+      "id": "V41-P05",
+      "level": 3,
+      "parent_id": "M02",
+      "record": "v41_policy"
+    },
+    {
+      "id": "V41-P06",
+      "level": 3,
+      "parent_id": "M02",
+      "record": "v41_policy"
+    },
+    {
+      "id": "V41-P07",
+      "level": 3,
+      "parent_id": "M09",
+      "record": "v41_policy"
+    },
+    {
+      "id": "V41-P08",
+      "level": 3,
+      "parent_id": "M09",
+      "record": "v41_policy"
+    },
+    {
+      "id": "V41-P09",
+      "level": 3,
+      "parent_id": "M09",
+      "record": "v41_policy"
+    },
+    {
+      "id": "V41-P10",
+      "level": 3,
+      "parent_id": "M09",
+      "record": "v41_policy"
+    },
+    {
+      "id": "V41-P11",
+      "level": 3,
+      "parent_id": "M10",
+      "record": "v41_policy"
+    },
+    {
+      "id": "C01",
+      "level": 4,
+      "parent_id": "R12",
+      "record": "base_card"
+    },
+    {
+      "id": "C02",
+      "level": 4,
+      "parent_id": "R10",
+      "record": "base_card"
+    },
+    {
+      "id": "C03",
+      "level": 4,
+      "parent_id": "V41-P04",
+      "record": "base_card"
+    },
+    {
+      "id": "C04",
+      "level": 4,
+      "parent_id": "V41-P02",
+      "record": "base_card"
+    },
+    {
+      "id": "C05",
+      "level": 4,
+      "parent_id": "E01",
+      "record": "base_card"
+    },
+    {
+      "id": "C06",
+      "level": 4,
+      "parent_id": "E03",
+      "record": "base_card"
+    },
+    {
+      "id": "C07",
+      "level": 4,
+      "parent_id": "R09",
+      "record": "base_card"
+    },
+    {
+      "id": "C08",
+      "level": 4,
+      "parent_id": "E02",
+      "record": "base_card"
+    },
+    {
+      "id": "C09",
+      "level": 4,
+      "parent_id": "E04",
+      "record": "base_card"
+    },
+    {
+      "id": "V41-H01",
+      "level": 4,
+      "parent_id": "V41-P02",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H02",
+      "level": 4,
+      "parent_id": "V41-P02",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H03",
+      "level": 4,
+      "parent_id": "V41-P02",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H04",
+      "level": 4,
+      "parent_id": "V41-P03",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H05",
+      "level": 4,
+      "parent_id": "E01",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H06",
+      "level": 4,
+      "parent_id": "V41-P01",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H07",
+      "level": 4,
+      "parent_id": "V41-P04",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H08",
+      "level": 4,
+      "parent_id": "R16",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H09",
+      "level": 4,
+      "parent_id": "R12",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H10",
+      "level": 4,
+      "parent_id": "E02",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H11",
+      "level": 4,
+      "parent_id": "V41-P06",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H12",
+      "level": 4,
+      "parent_id": "R20",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H13",
+      "level": 4,
+      "parent_id": "E03",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H14",
+      "level": 4,
+      "parent_id": "V41-P10",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H15",
+      "level": 4,
+      "parent_id": "V41-P08",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H16",
+      "level": 4,
+      "parent_id": "V41-P10",
+      "record": "v41_card"
+    },
+    {
+      "id": "V41-H17",
+      "level": 4,
+      "parent_id": "V41-P07",
+      "record": "v41_card"
+    }
+  ],
+  "sources": [
+    {
+      "id": "cross:S01",
+      "relative_path": "vllm_a/speed_up_v7/reports/analysis/bottleneck_analysis_30s_20260508.md",
+      "line": 50,
+      "sha256": "246a17a1838e46c5cd4e39aa084aee84b89aa11db55ddfa1ef0c1f4e78b1c56f",
+      "bytes": 5629,
+      "anchor": "Discarded Sparse MLA",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S02",
+      "relative_path": "vllm_a/speed_up_v7/logs/build/mqa_logits_v7_correctness_final10_20260514_011903.log",
+      "line": 4,
+      "sha256": "45de60413c654174fc43cfef0ab02e79997aa8c269e59c43d70661afbe9c6cc3",
+      "bytes": 1862,
+      "anchor": "case=50k",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S03",
+      "relative_path": "vllm_d/flash0731_speed_up_v3/reports/final_flash0731_speed_up_v3_summary.md",
+      "line": 70,
+      "sha256": "e8608f4e34312229c8d5f976174bfaa3a36df35deddb4234b172b0384712b8ca",
+      "bytes": 4360,
+      "anchor": "Rejected Probes",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S04",
+      "relative_path": "vllm_d/flash0731_speed_up_v3/reports/qa/maxlen_1m_shapebucket_min32000_emptycache_compactragged_graphfix_qa.md",
+      "line": 54,
+      "sha256": "3486d1bab979835079ddacc148da04c7230d015f22421d038e8d7455e1e48735",
+      "bytes": 3946,
+      "anchor": "Earlier 1M probes",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S05",
+      "relative_path": "vllm_a/fp8_speed_up_v7_tpot/reports/analysis/stage55_mtp_kvcache_findings_20260611.md",
+      "line": 45,
+      "sha256": "3c1f31b00c93a6d6a461ac400dee581ef9fb82c43eb7ee0ba6402dba6007d73f",
+      "bytes": 4943,
+      "anchor": "Formal or longer-output",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S06",
+      "relative_path": "vllm_a/fp8_speed_up_v7_tpot/logs/deploy/stage55_mtp_nt1_eager_fastpp_slice_20260612_001658/20260611_161658_decode_rank0.log",
+      "line": 4915,
+      "sha256": "985acbbcbc05e5082b280ff0e14b49337cfd322fabf88b38eba912039f053679",
+      "bytes": 519613,
+      "anchor": "RPC call to sample_tokens timed out",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S07",
+      "relative_path": "vllm_a/fp8_speed_up_v6_tpot/reports/analysis/stage50_current_best_token_dependency_timeline_20260606.md",
+      "line": 100,
+      "sha256": "60f4ed797965d8c0ae6e43acad8119399d9a040af329e1674566052a6b7646df",
+      "bytes": 6582,
+      "anchor": "Interpretation",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S08",
+      "relative_path": "vllm_a/fp8_speed_up_v6_tpot/reports/analysis/stage50_currentbest_graph_launch_overlap_20260608.md",
+      "line": 12,
+      "sha256": "c86b1456a11383aede49115fd243d4535f8fbc0e8247955eb8af7cad6bf94cf1",
+      "bytes": 3115,
+      "anchor": "Per-PP Critical-Lane",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S09",
+      "relative_path": "vllm_a/fp8_speed_up_v4_task_1p1d_v1/reports/analysis/ttft_pd_overhead_diagnosis_20260526.md",
+      "line": 5,
+      "sha256": "e8375ed017d35f8719a01d24f7b73e041aa24ace101f7de31df9695941cd57d9",
+      "bytes": 2856,
+      "anchor": "Current true P/D timing split",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S10",
+      "relative_path": "vllm_a/fp8_speed_up_v4_task_1p1d_v1/reports/analysis/glm5_disagg_kv_transfer_diagnosis_20260526.md",
+      "line": 31,
+      "sha256": "055ad1ce25124710a708445de728df3fd3083031777400cfc4a67aa23b4ff1e2",
+      "bytes": 3637,
+      "anchor": "IB multi-HCA evidence",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S11",
+      "relative_path": "vllm_a/glm52_speed_up_v1/reports/optimization_summary_20260618_021205.md",
+      "line": 38,
+      "sha256": "cb428e8f6663583cea6cf09541150f00a70b9dc06cb69553c163ad6463b678b2",
+      "bytes": 7356,
+      "anchor": "Source Changes",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S12",
+      "relative_path": "vllm_a/fp8_speed_up_v7_tpot/reports/analysis/stage62_tp2pp8_mtp3_skipfirst_splitmerge_fullaccept_20260615_profiler_analysis.md",
+      "line": 29,
+      "sha256": "12504fd99b1f8541789c5a6d4995ca203a1ffba215693d77e6ea4221716d20fe",
+      "bytes": 2513,
+      "anchor": "Stage62 observation",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S13",
+      "relative_path": "vllm_a/glm52_speed_up_v2_stable_haproxy_8th_session_error/ok_260824.md",
+      "line": 89,
+      "sha256": "72949afbb88c75cd545cd2361e9f11d928d4537da79bad1d45fea9336ef639d0",
+      "bytes": 29286,
+      "anchor": "根因一：PP Speculative Correction",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S14",
+      "relative_path": "vllm_a/glm52_speed_up_v2_stable_haproxy_8th_session_error/ok_260821_v2.md",
+      "line": 195,
+      "sha256": "60476bad2d28ecf5c17451637e54266f96cb6ab64c56e9b321f00dbbf0ad3c97",
+      "bytes": 19271,
+      "anchor": "正确逻辑必须让 active length",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S15",
+      "relative_path": "vllm_a/glm52_speed_up_v2_stable_haproxy_8th_session_error/ok_260825.md",
+      "line": 10,
+      "sha256": "36c9559765c8a9e44f6f3f308fb0cb796a2053f36ddf16ed00977cc5ff500760",
+      "bytes": 23198,
+      "anchor": "一句话判断",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S16",
+      "relative_path": "vllm_d/flash0731_speed_up_v6_api_2nd/reports/final_failure_report.md",
+      "line": 43,
+      "sha256": "dadb0a12b5d3e74e6055ed8d104f0e4ee45359ad90d691e2c692684b5f2be9e1",
+      "bytes": 6447,
+      "anchor": "GSM8K 失败复核",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S17",
+      "relative_path": "vllm_d/flash41_speed_up_v2_api_1st/reports/r4_tool_tokenizer_defect.json",
+      "line": 10,
+      "sha256": "da59c5dd195834bb67ac32f754bc0add35e25f8fd6ed2be020cee4ed59fce7b1",
+      "bytes": 1592,
+      "anchor": "cannot pickle",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S18",
+      "relative_path": "vllm_d/flash41_speed_up_v2_api_1st/reports/r3_multimodal_retry_defect.json",
+      "line": 9,
+      "sha256": "3495e08e66486c31086230558b0c8af2bb9441442ad46de296f7d5ad03431e95",
+      "bytes": 1018,
+      "anchor": "Multi-modal cache miss",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S19",
+      "relative_path": "vllm_d/flash0731_speed_up_v6_api_2nd/reports/training_id_isolation.md",
+      "line": 7,
+      "sha256": "efa6c52895ba26fee02c726e6c4cba1df289ae1e9415ec02ca35a7787681170b",
+      "bytes": 3010,
+      "anchor": "目录合同",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S20",
+      "relative_path": "vllm_a/glm52_speed_up_v2_stable_haproxy_8th_session_error/report_260818_94558_topk_overread_rootcause_response.md",
+      "line": 21,
+      "sha256": "9913850ed2b083d8751c6088c416f820933ee9df7606d6981dded4e3a18a07ce",
+      "bytes": 14037,
+      "anchor": "决定性问题",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S21",
+      "relative_path": "vllm_d/flash0731_speed_up_v6/reports/operator/stage6_mqa_physical45_probe191_decision.json",
+      "line": 12,
+      "sha256": "ca1ad85c2759b02d99551f8c565dcb1fe3e06cfc8f86394ae763d485b1177b2b",
+      "bytes": 715,
+      "anchor": "gpu4_dynamic_oracle_gain_ms",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S22",
+      "relative_path": "vllm_d/flash0731_speed_up_v6/reports/operator/stage6_sparse_prefill_physical45_probe190_decision.json",
+      "line": 18,
+      "sha256": "18a60e74d120533d7da4c11ba6016a44a04efdae6309d2a576dc709af48e8ed5",
+      "bytes": 986,
+      "anchor": "REJECT_NO_GAIN",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    },
+    {
+      "id": "cross:S23",
+      "relative_path": "vllm_a/speed_up_v7/reports/stages/stage_10s_summary.md",
+      "line": 51,
+      "sha256": "721ba9bcce06462eeed50eda11772768ef575258f7db650f86507d5391d607c3",
+      "bytes": 5591,
+      "anchor": "Profile run",
+      "type": "historical_source",
+      "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
+      "raw_in_repository": false
+    }
+  ]
+}

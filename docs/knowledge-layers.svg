@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="670" viewBox="0 0 1080 670" role="img" aria-labelledby="title desc">
+<title id="title">KSEO 由粗到细的分层知识</title>
+<desc id="desc">四层自上而下，每层只连接相邻下一层，无交叉线。目录导航关系不等于因果证明。</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#64748b" stroke-width="1.5"/></marker></defs>
+<rect width="1080" height="670" fill="#f8fafc"/>
+<g font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif">
+<text x="540" y="48" text-anchor="middle" font-size="26" font-weight="700" fill="#0f172a">KSEO · 分层优化知识</text>
+<rect x="64" y="82" width="952" height="101" rx="12" fill="#e0f2fe" stroke="#94a3b8"/>
+<text x="90" y="117" font-size="23" font-weight="700" fill="#0f172a">L1 · 优化原则</text>
+<text x="90" y="155" font-size="18" fill="#334155">6 条原则：语义与合同、最大瓶颈点、真实负载、状态一致性、服务能力、证据边界</text>
+<path d="M540,185 L540,208" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="64" y="215" width="952" height="101" rx="12" fill="#e0e7ff" stroke="#94a3b8"/>
+<text x="90" y="250" font-size="23" font-weight="700" fill="#0f172a">L2 · 诊断与优化方法</text>
+<text x="90" y="288" font-size="18" fill="#334155">12 个方法：明确检查步骤、工具输入与所需证据</text>
+<path d="M540,318 L540,341" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="64" y="348" width="952" height="101" rx="12" fill="#e0f2fe" stroke="#94a3b8"/>
+<text x="90" y="383" font-size="23" font-weight="700" fill="#0f172a">L3 · 带条件的场景规则</text>
+<text x="90" y="421" font-size="18" fill="#334155">35 条规则：匹配模型 / 硬件 / 能力；现行用户规则完整提供</text>
+<path d="M540,451 L540,474" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="64" y="481" width="952" height="101" rx="12" fill="#ecfdf5" stroke="#94a3b8"/>
+<text x="90" y="516" font-size="23" font-weight="700" fill="#0f172a">L4 · 历史案例与来源</text>
+<text x="90" y="554" font-size="18" fill="#334155">46 个案例 · 53 条来源记录：保留观察、原状态、SHA256 与未闭环项</text>
+<text x="540" y="636" text-anchor="middle" font-size="18" fill="#475569">全层保留证据边界 · 历史知识须在当前合同验证 · 本次未重跑 GPU</text>
+</g></svg>
