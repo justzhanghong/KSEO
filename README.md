@@ -112,12 +112,15 @@ kseo validate ./runs/model-001/task.json \
 
 ## 经验转换
 
-经验按 **原则 → 方法 → 场景规则 → 案例与来源** 由粗到细组织：6 条原则、12 个方法、35 条规则、46 个案例，关联 53 条来源记录。原有 9 张代表性卡片和 V4.1 专项包均已纳入；本轮增加 GLM-5.1/5.2、V4-Flash 与 V4.1-Flash 的 20 条跨模型经验，覆盖生产 shape、峰值显存、CUDA Graph、最大瓶颈点、真实 P/D、MTP/Batch/KV 状态、API 与证据审查。
+经验按 **原则 → 方法 → 场景规则 → 案例与来源** 由粗到细组织：6 条原则、12 个方法、36 条规则、46 个案例，关联 54 条来源记录。原有 9 张代表性卡片和 V4.1 专项包均已纳入；本轮增加 GLM-5.1/5.2、V4-Flash 与 V4.1-Flash 的 20 条跨模型经验，覆盖生产 shape、峰值显存、CUDA Graph、最大瓶颈点、真实 P/D、MTP/Batch/KV 状态、API 与证据审查。
+
+**全模型规则 G-P01：速度优化必须数学等价，只允许浮点自身引入的微小数值差异。** 不要求 bitwise 一致；容差须在搜索前按 dtype、算子和 shape 冻结。数值接近或质量分数通过不能单独证明数学等价，历史经验不能豁免该前提。
 
 每一层都注明证据边界，案例保留历史观察和原状态。跨模型规则是需要当前任务验证的迁移建议；未闭环根因继续保留未闭环。详见 [分层知识手册](docs/knowledge.md) 与 [案例和来源索引](docs/knowledge-cases.md)。
 
 ```bash
 kseo knowledge --tree
+kseo knowledge --node G-P01
 kseo knowledge --node K04
 kseo knowledge --node R15
 kseo knowledge --node case:R15
@@ -132,7 +135,7 @@ kseo ingest /path/to/task.md /path/to/acceptance.json --out imported.json
 
 `ingest` 建立 `NEEDS_REVIEW` 卡片，做基础脱敏，不会把历史 PASS 自动当作新任务成功。补齐适用条件、来源和迁移限制并审查后，才能接入自动检索。见 [流程与经验迁移](docs/conversion.md)。
 
-Agent 请求新增 `knowledge_hierarchy`，携带原则、所选方法、规则、匹配案例、祖先关系与来源。V4.1 的 `model_recipe` 仍完整提供 11 条现行规则，不受 top-k 截断。2048-token 含义、并发增长阈值和计时口径中的未明确项均保留为待确认，不能自动判 PASS。详见 [V4.1-Flash 优化经验](docs/models/deepseek-v4.1-flash.md)。知识和经验包尚未替代真实部署、warmup 审计和 Feature 采集 adapter。
+Agent 请求新增 `knowledge_hierarchy`，携带原则、所选方法、规则、匹配案例、祖先关系与来源。全模型 G-P01 始终提供，V4.1 的 `model_recipe` 仍完整提供 11 条模型现行规则，均不受 top-k 截断。2048-token 含义、并发增长阈值和计时口径中的未明确项均保留为待确认，不能自动判 PASS。详见 [V4.1-Flash 优化经验](docs/models/deepseek-v4.1-flash.md)。知识和经验包尚未替代真实部署、warmup 审计和 Feature 采集 adapter。
 
 ## 验证
 

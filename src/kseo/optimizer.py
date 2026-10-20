@@ -49,6 +49,7 @@ def agent(config: dict, state: dict, directory: Path, variables: dict, environme
                "knowledge_hierarchy": retrieve_hierarchy(config["context"]),
                "instructions": "只向 proposal_dir 写 proposal.json 和可选 patch.diff。不得修改 source_dir、合同或验收器。每次只提出一个可检验假设。"
                                " knowledge_hierarchy 按原则、方法、场景规则、案例组织；必须保留 evidence_boundary。"
+                               " 所有速度优化必须数学等价，只允许浮点自身造成的微小差异，并满足预先冻结的数值容差；质量分数通过不能替代等价性。"
                                " 导航关系不等于因果证明，历史参数不是新模型默认，迁移规则和历史案例均不是当前验收证据。"}
     if workflow is not None:
         request["workflow"] = workflow

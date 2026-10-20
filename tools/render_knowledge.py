@@ -42,9 +42,10 @@ def render() -> None:
            "| 层级 | 内容 | 数量 | 证据边界 |", "| --- | --- | --- | --- |",
            "| L1 | 优化原则 | 6 | 跨案例概括，不构成任意模型上的收益证明 |",
            "| L2 | 诊断与优化方法 | 12 | 决定检查和实验步骤，尚需实际工具与证据 |",
-           "| L3 | 带条件的场景规则 | 35 | 20 条跨模型迁移规则、11 条 V4.1 现行规则、4 条原有经验归纳；不自动生成参数默认 |",
+           "| L3 | 带条件的场景规则 | 36 | 1 条全模型数学等价规则、11 条 V4.1 现行规则、20 条跨模型迁移规则、4 条原有经验归纳 |",
            "| L4 | 历史案例与来源 | 46 | 20 个新整理案例、26 个原有案例；保留历史状态与缺口 |", "",
-           "关联 53 条来源记录：本批 23 条历史来源，以及已有 V4.1 包的 27 条历史来源和 3 条用户原文。来源记录数不等于独立复现次数。原有 9 张代表性摘要卡未保存逐卡直接来源 hash，明确保留此缺口，不补造引用。", "",
+           "关联 54 条来源记录：本批 23 条历史来源、已有 V4.1 包的 27 条历史来源，以及 4 条用户原文。来源记录数不等于独立复现次数。原有 9 张代表性摘要卡未保存逐卡直接来源 hash，明确保留此缺口，不补造引用。", "",
+           "**通用前提 G-P01：速度优化必须数学等价。** 允许的差异限于浮点表示、舍入、等价运算重排或并行归约带来的微小误差，并满足搜索前冻结的容差。数学等价不要求 bitwise 一致；数值接近或质量分数通过也不能单独证明数学等价。该规则对所有模型和优化路径生效，不受 top-k 限制。", "",
            "## 组织与证据边界", "",
            "本批材料抽查 GLM-5.1 NVFP4/FP8、GLM-5.2、V4-Flash 和 V4.1-Flash 的报告、故障分析及部分原始日志。整理前核对新增 23 份原文件的 SHA256；没有逐行审计全部历史日志，没有重跑 GPU，也没有新增真实单机或 P/D 部署 adapter。用户授权整理不提升原证据等级。", "",
            "| 证据类型 | 可以支持 | 不能直接支持 |", "| --- | --- | --- | --- |",
@@ -61,7 +62,7 @@ def render() -> None:
            "# 按模型和明确能力筛选；同时返回祖先、匹配案例和来源", "kseo knowledge --hierarchy --context examples/knowledge/glm52-pd-context.json --limit 24", "```", "",
            "`--tree`/`--node` 是完整导航，不隐含条件已满足；不能同时传 `--context`。`--hierarchy` 才筛选条件，缺少能力或硬件字段不假定匹配。示例 context 只演示筛选，不证明该部署已经支持相应能力。", "",
            "旧 `knowledge --context ...` 继续返回原有平面卡片；新分层接口覆盖本次跨模型规则。`--extra` 只用于旧接口，未审阅导入不会自动进入层级。", "",
-           "外部 Agent 的 `knowledge_hierarchy` 始终带 6 条原则，并带所选方法、规则、匹配案例、祖先 ID 和来源。`--limit`/top-k 只截断迁移规则；匹配模型的 11 条现行规则完整保留，`model_recipe` 仍完整提供。当前合同和用户规则优先，旧参数、learned-experience 和历史案例不得覆盖；未知阈值仍待确认，不能自动 PASS。", "",
+           "外部 Agent 的 `knowledge_hierarchy` 始终带 6 条原则、全模型 G-P01 及所选方法、规则、匹配案例、祖先 ID 和来源。`--limit`/top-k 只截断迁移规则；匹配 V4.1 时，11 条模型现行规则完整保留，`model_recipe` 仍完整提供。当前合同和用户规则优先，旧参数、learned-experience 和历史案例不得覆盖；未知阈值仍待确认，不能自动 PASS。", "",
            "## 原则 → 方法 → 规则", ""]
     for principle in children[None]:
         doc += [f"<a id=\"{principle['id'].lower()}\"></a>", f"### {principle['id']} {principle['title']}", "", principle["summary"], ""]
@@ -70,15 +71,22 @@ def render() -> None:
             doc += [f"{i}. {step}" for i, step in enumerate(method["procedure"], 1)]
             doc += ["", "所需证据：" + "；".join(method["required_evidence"]) + "。", "",
                     "场景规则：" + "、".join(link(rule) + " " + rule["title"] for rule in children[method["id"]]) + "。", ""]
-    doc += ["## 场景规则细目", "", "以下规则是执行检查和实验的依据。当前 V4.1 原规则完整内容见模型 recipe；本表不重写它的阈值、停用项或计数语义。", ""]
+    doc += ["## 场景规则细目", "", "G-P01 是本轮明确补充的全模型前提。V4.1 原规则完整内容见模型 recipe；本表不重写它的阈值、停用项或计数语义。", ""]
     for rule in sorted((n for n in nodes if n["level"] == 3), key=lambda n: n["id"]):
         doc += [f"<a id=\"{rule['id'].lower()}\"></a>", f"### {rule['id']} {rule['title']}", "",
                 "上层方法：" + link(index[rule["parent_id"]]) + "。", "",
                 "适用条件：" + conditions(rule) + "。", ""]
         if rule["kind"] == "current_policy":
-            doc += ["类别：**当前用户规则**；具体操作、待确认参数和 adapter 要求以 `kseo recipe deepseek-v4.1-flash` 为准。", ""]
+            if rule["id"] == "G-P01":
+                doc += ["类别：**全模型通用的当前用户规则**。不要求浮点 bitwise 一致，不提供全局默认 atol/rtol，不包含自动数学证明器。", ""]
+            else:
+                doc += ["类别：**当前用户规则**；具体操作、待确认参数和 adapter 要求以 `kseo recipe deepseek-v4.1-flash` 为准。", ""]
             doc += ["- " + step for step in rule["policy"].get("procedure", rule.get("recommended_actions", []))]
-            doc += ["", "完整解释：[V4.1-Flash 专项经验](models/deepseek-v4.1-flash.md)。", ""]
+            if rule["id"] == "G-P01":
+                doc += ["", "所需证据：" + "；".join(rule["policy"]["required_evidence"]) + "。", "",
+                        "完整规则：`kseo knowledge --node G-P01`。不重新启用已退役的输出文本相似度门禁；数学依据、独立数值 oracle 和当前质量门禁分别检查。", ""]
+            else:
+                doc += ["", "完整解释：[V4.1-Flash 专项经验](models/deepseek-v4.1-flash.md)。", ""]
         else:
             doc += ["类别：**需要当前任务验证的迁移规则**。" + rule["summary"], ""]
         doc += ["证据基础：" + rule["evidence_boundary"]["basis"] + "。", ""]
@@ -121,10 +129,10 @@ def render() -> None:
                   f"- SHA256：`{source['sha256']}`。", "- 审阅范围：" + source.get("review", "保留原索引的记录范围。"), ""]
     (ROOT / "docs/knowledge-cases.md").write_text("\n".join(cases), encoding="utf-8")
 
-    labels = [("L1 · 优化原则", "6 条原则：语义与合同、最大瓶颈点、真实负载、状态一致性、服务能力、证据边界"),
+    labels = [("L1 · 优化原则", "6 条原则：数学等价与合同、最大瓶颈点、真实负载、状态一致性、服务能力、证据边界"),
               ("L2 · 诊断与优化方法", "12 个方法：明确检查步骤、工具输入与所需证据"),
-              ("L3 · 带条件的场景规则", "35 条规则：匹配模型 / 硬件 / 能力；现行用户规则完整提供"),
-              ("L4 · 历史案例与来源", "46 个案例 · 53 条来源记录：保留观察、原状态、SHA256 与未闭环项")]
+              ("L3 · 带条件的场景规则", "36 条规则：数学等价为全模型前提；模型 / 硬件 / 能力规则按条件匹配"),
+              ("L4 · 历史案例与来源", "46 个案例 · 54 条来源记录：保留观察、原状态、SHA256 与未闭环项")]
     svg = ['<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="670" viewBox="0 0 1080 670" role="img" aria-labelledby="title desc">',
            '<title id="title">KSEO 由粗到细的分层知识</title>',
            '<desc id="desc">四层自上而下，每层只连接相邻下一层，无交叉线。目录导航关系不等于因果证明。</desc>',

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "kseo-optimization-knowledge",
-  "revision": "2026-10-20.1",
+  "revision": "2026-10-20.2",
   "organization_status": "USER_AUTHORIZED_HIERARCHICAL_ORGANIZATION",
   "organization_note": "用户确认按由粗到细的多层次知识整理；此授权不提升历史事实或未闭环假设的证据等级。",
   "scope": "抽查 GLM-5.1 NVFP4/FP8、GLM-5.2、V4-Flash 与 V4.1-Flash 的代表性正式报告、故障分析及部分原始日志；不是全量日志逐行审计。",
@@ -46,12 +46,12 @@
       "id": "K01",
       "level": 1,
       "parent_id": null,
-      "title": "先保证模型语义与合同可比",
+      "title": "先保证数学等价、模型语义与合同可比",
       "applies_to": {},
       "requires_capabilities": [],
       "kind": "principle",
       "status": "GUIDANCE",
-      "summary": "先验证模型能力、结构和参考，再冻结 thinking、输出预算、质量口径及协议；性能变化不能悄悄改变任务定义。",
+      "summary": "速度优化必须在数学上等价，只允许浮点表示和运算自身带来的微小数值差异；先验证模型能力、结构和参考，再冻结质量与协议合同。",
       "evidence_boundary": {
         "basis": "SYNTHESIS_OF_HISTORICAL_CASES_AND_CURRENT_POLICY",
         "claim_scope": "跨案例整理的工作原则/方法，用于选择检查和实验；具体模型结论见下层规则与案例。",
@@ -201,17 +201,19 @@
       "id": "M02",
       "level": 2,
       "parent_id": "K01",
-      "title": "冻结质量合同与条件门禁",
+      "title": "数学等价、数值误差与质量合同",
       "applies_to": {},
       "requires_capabilities": [],
       "kind": "method",
       "status": "GUIDANCE",
       "procedure": [
+        "先说明数学变换如何等价，区分浮点微小误差与算法/模型语义变化；在搜索前冻结 dtype、误差口径和容差。",
         "冻结 thinking、输出预算、retry、scorer 与总分母。",
-        "从现行合同生成门禁；Feature 条件启用与输出文本相似度退役分别处理。"
+        "从现行合同生成门禁；数值 oracle、条件 Feature 与已退役的文本相似度门禁分别处理。"
       ],
       "required_evidence": [
-        "不可变质量合同",
+        "数学等价性说明与独立数值 oracle",
+        "不可变 dtype/容差/质量合同",
         "逐样本终态与计分理由"
       ],
       "evidence_boundary": {
@@ -2034,6 +2036,65 @@
         ]
       },
       "priority": 0
+    },
+    {
+      "id": "G-P01",
+      "level": 3,
+      "parent_id": "M02",
+      "title": "速度优化必须数学等价，只允许浮点自身引入的微小差异",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "kind": "current_policy",
+      "status": "CURRENT_USER_POLICY",
+      "summary": "速度收益以数学等价为前提；只接受浮点自身带来的微小数值差异，不能用事后放宽容差替代等价性。",
+      "source_ids": [
+        "policy:U01"
+      ],
+      "policy": {
+        "title": "速度优化必须数学等价，只允许浮点自身引入的微小差异",
+        "mathematical_equivalence_required": true,
+        "bitwise_equality_required": false,
+        "allowed_deviation": "仅允许浮点表示、舍入、等价运算重排或并行归约带来的微小数值差异，并满足事先冻结的误差合同。",
+        "floating_point_tolerance": {
+          "defined_before_search": true,
+          "universal_atol": null,
+          "universal_rtol": null,
+          "source": "当前任务合同与独立 oracle；按 dtype、算子路径和实际 shape 声明，不能事后放宽。"
+        },
+        "procedure": [
+          "所有模型及 Configuration、Scheduling、Kernel、P/D、cache 路径的速度优化均须保持原计算的数学定义；给出变换与原 forward 的等价性说明。",
+          "数学等价不要求浮点 bitwise 一致；误差须能解释为浮点表示、舍入、运算顺序或并行归约造成的微小差异。",
+          "冻结 dtype、参考实现、真实 shape/stride/mask/position、误差统计与容差，再执行独立数值 oracle；未知容差不得猜测统一常数或自动判 PASS。",
+          "不得以更高速度或质量分数通过为由采用非等价近似、跳过必要计算/target verification、删减真实 token、改变 mask/position/KV 语义或暗改精度合同。",
+          "数值接近不单独证明数学等价，有限样本 oracle 通过不构成全域证明；数学依据、数值误差与有效合同的 E2E 门禁都要检查。",
+          "本规则不重新启用模型输出文本相似度门禁，也不要求采样文本逐字一致；Feature 仅在当前合同启用时按对应选层规则执行。"
+        ],
+        "required_evidence": [
+          "数学等价性说明与原/新计算路径对应",
+          "冻结的 dtype、误差口径、容差和参考身份",
+          "真实 shape/边界/mask/position 的独立数值比较及实际误差",
+          "当前合同中仍有效的质量与 E2E 结果"
+        ],
+        "enforcement": {
+          "implemented_by_recipe": false,
+          "symbolic_equivalence_prover_included": false,
+          "automatic_global_pass_enabled": false,
+          "requires_adapter": [
+            "独立数值 oracle 与实际误差记录",
+            "当前任务的容差和质量门禁"
+          ]
+        }
+      },
+      "evidence_boundary": {
+        "basis": "CURRENT_USER_POLICY",
+        "claim_scope": "所有模型及所有速度优化路径；具体浮点误差阈值由当前合同事先声明。",
+        "causal_status": "NORMATIVE_NOT_EMPIRICAL",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "这是必须遵守的规范，不代表 KSEO 已自动证明任意候选数学等价。",
+          "数值 oracle 或质量分数通过不能代替数学等价性依据；本轮没有 GPU 复测。"
+        ]
+      }
     }
   ],
   "legacy_links": [
@@ -2513,6 +2574,15 @@
       "type": "historical_source",
       "review": "已核对本次整理所引用片段及文件 SHA256；不代表逐行重审全部 raw。",
       "raw_in_repository": false
+    },
+    {
+      "id": "policy:U01",
+      "type": "current_user_instruction",
+      "statements": [
+        "还有重要的一条经验，速度优化过程中，数学上必须等价，允许浮点数设计自身缺陷引入的微小差异。"
+      ],
+      "sha256": "652953f194f656756efd416b7904d72736d034c5d13000e70bd90582e9b81081",
+      "review": "本轮用户明确提出的通用规范；hash 按 statements 以换行连接的 UTF-8 文本计算，不是实测证据。"
     }
   ]
 }
