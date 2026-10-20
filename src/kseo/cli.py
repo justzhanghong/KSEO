@@ -59,6 +59,14 @@ def parser() -> argparse.ArgumentParser:
     dataset.add_argument("name", nargs="?", help="省略时列出数据清单")
     dataset.add_argument("--root", type=Path, help="校验外部或已导出的数据目录")
     dataset.add_argument("--out", type=Path, help="导出到新目录，拒绝覆盖")
+    sub.add_parser("defaults", help="查看默认测速、多轮、精度、资源及 Docker 政策")
+    sub.add_parser('roles', help='查看瓶颈分析、开发、验收和 System 的协议与权限')
+    prepare = sub.add_parser("prepare", help="从简要任务输入生成默认策略、发现报告和 Agent 自举请求")
+    prepare.add_argument("brief", type=Path)
+    prepare.add_argument("--out", type=Path, required=True)
+    doctor = sub.add_parser("doctor", help="检查自举后的真实合同与直接 adapter；不代替平台实测")
+    doctor.add_argument("task", type=Path)
+    doctor.add_argument("--brief", type=Path)
     ingest = sub.add_parser("ingest", help="将明确列出的历史材料导入为待审经验")
     ingest.add_argument("paths", nargs="+", type=Path)
     ingest.add_argument("--out", required=True, type=Path)
@@ -74,7 +82,7 @@ def audit(task_path: Path, directory: Path) -> dict:
     identity = read_json(directory / "identity.json")
     if identity.get("contract_sha256") != digest(config):
         raise KSEOError("任务合同与实验 identity 不符")
-    if config["validation"].get("final_accuracy") and identity.get("phase") != record.get("phase"):
+    if (config["validation"].get("final_accuracy") or config["validation"].get("multi_turn") or config["validation"].get("milestones")) and identity.get("phase") != record.get("phase"):
         raise KSEOError("实验 phase 与 identity 不符，不能跳过最终精度门禁")
     from .source import assert_unchanged
     assert_unchanged(directory / "source", identity["source_revision"])
@@ -95,14 +103,31 @@ def audit(task_path: Path, directory: Path) -> dict:
         path = directory / "steps" / name / "result.json"
         if path.exists():
             results[name] = validation.ingest_stage(path, identity, config["mode"], name, config["validation"])
+    from . import artifacts
+    previous = []
+    for sibling in directory.parent.glob('*/trial.json'):
+        prior = read_json(sibling)
+        if prior['id'] != record['id'] and prior.get('started_at','') < record.get('started_at',''):
+            previous.append(prior.get('results',{}).get('deploy',{}).get('runtime',{}).get('deployment_id'))
+    artifacts.validate(results, identity, config['validation'], phase=record['phase'], previous_deployments=previous)
     decisions = validation.gates(results, config["validation"], phase=record["phase"])
-    return {"trial": record["id"], "pass": all(gate["pass"] for gate in decisions), "gates": decisions}
+    return {"trial": record["id"], "phase": record["phase"], "acceptance_scope": record.get("acceptance_scope", "FULL_TRIAL_CONTRACT"), "pass": all(gate["pass"] for gate in decisions), "gates": decisions}
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
-        if args.command == "validate":
+        if args.command == 'roles':
+            from .roles import catalog
+            print(json.dumps(catalog(), ensure_ascii=False, indent=2))
+        elif args.command in ("defaults", "prepare", "doctor"):
+            from . import brief
+            if args.command == "defaults":value = brief.defaults()
+            elif args.command == "prepare":value = brief.prepare(read_json(args.brief), args.out)
+            else:value = brief.doctor(args.task, args.brief)
+            print(json.dumps(value, ensure_ascii=False, indent=2))
+            return 0 if value.get('status') != 'NEEDS_INPUT_OR_ACCESS' else 2
+        elif args.command == "validate":
             if args.trial_dir:
                 result = audit(args.task, args.trial_dir.resolve())
                 print(json.dumps(result, ensure_ascii=False, indent=2))

@@ -34,12 +34,16 @@ G-P02 要求在速度优化和最佳产物的 E2E 复验之后，依次验收 **
 | `manifest[].gold` | LongBenchv2 本地 A–D 标签 |
 | `evaluator_sha256` / `extractor_sha256` | 实际测试器和确定性提取器身份，禁止候选修改 |
 | `generation.thinking` | 该 suite 统一的模式标签，逐 attempt 核对 |
-| `generation.first_max_output_tokens` / `context_limit` | 当前合同自己的预算和实际上下文限制；必须显式提供 |
-| `generation.retry_policy` | `none` 或 `empty_length_once`；后者仅首轮空正文且 length 时再用 context_limit-prompt_tokens 一次 |
+| `generation.output_limit` / `context_limit` | 新任务默认 `context_remaining`，使用实测上下文减去本题 native prompt token 数；不人为限制输出 |
+| `manifest[].prompt_tokens` | `context_remaining` 必须冻结每题实际 native prompt token 数，逐 attempt 核对 |
+| `generation.first_max_output_tokens` | 旧合同 `fixed` 模式的显式首轮预算；新默认不能同时填入人工 cap |
+| `generation.retry_policy` | 新默认 `none`；旧 `fixed` 可显式冻结 `empty_length_once`，仅首轮空正文且 length 再用完整余量一次 |
 | `choice_regex` | LongBench 冻结的单捕获组正则；从 final_content 提取最后一个匹配的 A–D，需符合实际评测协议 |
 | `min_score` / `max_failed_requests` | 当前合同的数值与失败门槛 |
 
 不能为满足当前 schema 选择一个会改变原评测语义的 parser；需要别的重试/提取协议时，先扩展版本化 adapter/Validator 并冻结新合同。不得在运行后放宽门槛或改变样本选择。
+
+0.5.0 的新模型自举同时约束 GSM8K 的 `quality_generation` 和完整 `quality_manifest`；精度逐题核对实际 prompt、Thinking、输出预算及生成策略摘要。不提供人工 cap，并不表示可以突破模型真实上下文；不足时报告具体样本，不静默截断或删题。
 
 ## 接入三个真实 wrapper
 

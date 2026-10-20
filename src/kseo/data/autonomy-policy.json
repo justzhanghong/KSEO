@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "id": "G-P03",
+      "level": 3,
+      "parent_id": "M11",
+      "title": "新模型默认合同、自举与跨模型共同验收政策",
+      "kind": "current_policy",
+      "status": "CURRENT_USER_POLICY",
+      "summary": "外层 Agent 自动发现并冻结可读信息，使用统一默认口径、资源预算、阶段目标与真实验收；任务显式覆盖优先。",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "source_ids": [
+        "policy:U04",
+        "policy:U05"
+      ],
+      "policy": {
+        "defaults_resource": "defaults.json",
+        "priority": "当前任务显式约定 > 统一默认策略 > 历史案例",
+        "procedure": [
+          "每次任务自己的模型、输入/输出长度、并发、Thinking、速度/精度阈值与阶段列表分别冻结；输出预算默认包含 reasoning 与 final，统计口径默认 mean，不把示例数值当全局目标。",
+          "多轮使用相同最终产物，仅改变 KVOffloading 开关；完整冻结请求包括第一轮，整体平均 TTFT 至少下降 30%，并检查实际 offload 读写。",
+          "GSM8K 与三项最终精度默认不人为限制输出；显式请求实际上下文余量，不能因省略 max_tokens 而被服务端短默认值截断。",
+          "用户给基础镜像；默认允许修改 Dockerfile、依赖和 Docker 镜像，每个候选记录真实产物与源码，最终新实例复验。",
+          "自动发现模型结构、FP8/vision/cache 能力、实际上下文、Thinking 参数、GPU/驱动、源码 commit 与模型内容身份；配置声明不代表 runtime 验收。",
+          "全模型执行等价双 metrics、usage 字段含义核对、超长输入拒绝/输出裁剪、全局请求/token 队列预算、1200 文本及图文能力成立时另加 1200 随机图片数样本；不发明图片限制。",
+          "单轮正式速度保持 Prefix Cache 开启且实际 cache_read 为零；多轮单独冻结 reuse_allowed，不能靠关闭全局零命中规则掩盖单轮命中。",
+          "只 warmup 一个声明的 model-forward shape，不按测量 shape 分别预热；V4.1 的旧 shape 矩阵、2048 待明确阈值、Feature 条件与历史硬件预算不自动移植为新模型门禁。",
+          "冻结阶段列表；始终满足数学等价、正确性与零失败，保留阶段中间收益；最终性能、精度、API、稳定性和 fresh deploy 全部通过后才完成。",
+          "其余缺信息在统一预算/交付默认范围内补齐；不可访问的凭据、用户尚未提供的基础镜像和无法验证的身份保持缺失状态，不填假值。"
+        ]
+      },
+      "evidence_boundary": {
+        "basis": "CURRENT_USER_POLICY_AND_EXPLICIT_DELEGATION",
+        "claim_scope": "新模型任务的统一工程默认与共同验收；可被当前任务明确覆盖。",
+        "causal_status": "NORMATIVE_NOT_EMPIRICAL",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "这些政策和 CPU 检查不等于已完成 GLM-5.3-Flash 的真实部署或模型精度。",
+          "不保证任意模型能在默认资源/预算内达到目标；失败应输出最佳有效证据与未满足项。"
+        ]
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "policy:U04",
+      "type": "current_user_instruction",
+      "statements": [
+        "256默认包含reasoning。下降30%，默认指整体平均TTFT下降30%以上。精度测试默认不限制输出长度。基础镜像我会给定，默认允许编辑和更新docker。其他该补的信息，你直接补上。"
+      ],
+      "sha256": "c07e9012cccfeb41526f39e36757ec11f2c7e37a4c09c9345deb7d8b6517666f",
+      "review": "当前用户默认约定与允许 Agent 补齐其他信息；不含真实测量或 GPU 部署结论。"
+    },
+    {
+      "id": "policy:U05",
+      "type": "current_user_instruction",
+      "statements": [
+        "注意，我给的prompt只是一个示例，以后又来另一个模型，具体地数值也是变化，所以要具有适应性。"
+      ],
+      "sha256": "fd9c1c7d5881bfeba2da21c3ef72418d74847bdbf22f01019e98ed05d8dae72f",
+      "review": "模型和具体任务数值是每次输入，不固化示例的模型、资源或阈值。"
+    }
+  ]
+}

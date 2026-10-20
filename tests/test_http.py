@@ -27,6 +27,14 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(result["output_tokens"], 4)
         self.assertEqual(result["input_tokens"], 10)
         self.assertGreaterEqual(result["total_ms"], result["ttft_ms"])
+        self.assertEqual(result['output_token_basis'],'reasoning_plus_final')
+
+    def test_tool_metadata_alone_is_not_a_first_generated_token(self):
+        events=[{'choices':[{'delta':{'tool_calls':[{'id':'tool_1','type':'function'}]}}]},
+                {'choices':[],'usage':{'prompt_tokens':10,'completion_tokens':4,'prompt_tokens_details':{'cached_tokens':0}}}]
+        stream=io.BytesIO((''.join('data: '+json.dumps(e)+'\n\n' for e in events)+'data: [DONE]\n\n').encode())
+        with patch('urllib.request.urlopen',return_value=stream),self.assertRaises(KSEOError):
+            measure(self.request(),'c1','http://example.test/v1/chat/completions')
 
     def test_missing_usage_not_fabricated(self):
         with patch("urllib.request.urlopen", return_value=self.stream(usage=False)):

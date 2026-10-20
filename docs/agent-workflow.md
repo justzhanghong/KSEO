@@ -2,6 +2,8 @@
 
 KSEO 的 System 调用 Configuration、Scheduling 和 Kernel 子流程。后两个子流程可以接现有 coding Agent。内置 proposer 是确定性 CPU 协议示例；真实 Agent 通过自己的 CLI 或包装脚本读取请求、分析热点并返回提案。
 
+角色的读写权限、分析员诊断和验收裁决见 [角色设计](roles.md)。简要输入与自动发现见 [新模型自举](agent-bootstrap.md)。
+
 ## 分层流水线
 
 `optimizer.kind=pipeline` 的完整例子见 `examples/demo/task-pipeline.json`，可执行 `kseo demo --pipeline`。内部顺序和产物见 [Architecture](architecture.md)。
@@ -9,7 +11,7 @@ KSEO 的 System 调用 Configuration、Scheduling 和 Kernel 子流程。后两�
 - Configuration 先搜索受约束参数，有独立候选次数上限。
 - Scheduling 接收 `workflow.lane=scheduling` 和选定 `workflow.hotspot`，返回参数或源码 patch。
 - Kernel 先提取独立任务并冻结 oracle，再调用 proposer，最后调用独立 validator；仅将局部通过的 patch 交回 System。
-- System 对每个候选执行完整 E2E 合同，更新 best 和 Profile，再决定下一轮。
+- System 对每个候选执行该阶段合同，更新 best 和 Profile，再决定下一轮；阶段搜索可保留正确中间候选，最终交付必须通过全部最终目标。
 
 以下提案协议同时供基础 `agent` 模式和上述两个 proposer 使用。
 
@@ -32,7 +34,7 @@ request 含当前合同、context、历史结果、最佳候选、源码目录�
 
 明确匹配 V4.1-Flash 时，request 还包含完整 `model_recipe`：现行测量原则、规则版本、来源索引、所需证据和未明确参数。它不受经验 top-k 截断；历史案例与 learned-experience 不得覆盖当前规则。Feature 的条件选层不等于重新启用已退役门禁，未知增长倍率、2048 阈值语义和计时口径不得猜测。recipe 是执行约束与建议，不是已经完成的验收证据。
 
-`knowledge_hierarchy` 提供由粗到细的知识：6 条原则和全模型 G-P01 始终携带，按明确条件选中迁移规则，再返回其方法、完整祖先链、匹配模型/硬件/能力的案例和来源。现行规则在该字段中也完整保留，迁移规则默认 top-8；原 `experience` 平面检索接口不变。`navigation_case_ids` 只用于下钻导航，不表示那些案例已经匹配本次上下文。
+`knowledge_hierarchy` 提供由粗到细的知识：6 条原则和全模型 G-P01/G-P02/G-P03 始终携带，按明确条件选中迁移规则，再返回其方法、完整祖先链、匹配模型/硬件/能力的案例和来源。现行规则在该字段中也完整保留，迁移规则默认 top-8；原 `experience` 平面检索接口不变。`navigation_case_ids` 只用于下钻导航，不表示那些案例已经匹配本次上下文。
 
 G-P01 要求所有速度优化数学等价，仅允许浮点表示、舍入、等价重排和并行归约造成的微小数值差异，并满足事先冻结的容差。Agent 须说明变换的数学依据，并交独立 oracle 与有效 E2E 门禁检查；不能用质量分数通过、有限样本数值接近或事后放宽容差替代数学等价。本规则不重新启用输出文本相似度门禁，不包含自动全域证明器。
 

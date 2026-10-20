@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name": "model-a-task",
+  "model_path": "/path/to/model-a",
+  "source": {"url": "https://github.com/example/vllm.git", "ref": "model-a-support"},
+  "base_image": "registry.example.com/vllm:model-a-base",
+  "platform": {"kind": "docker"},
+  "workdir": "/path/to/tasks/model-a-001",
+  "targets": {
+    "thinking": "high",
+    "speed": {"input_tokens": 32000, "output_tokens": 512, "concurrencies": [1, 2, 4], "ttft_ms": 8000, "tpot_ms": 25},
+    "milestones": [[20000, 50], [12000, 35], [8000, 25]],
+    "accuracy": {"gsm8k": 0.9, "rtlbench": 0.3, "longbench_v2": 0.5, "livecodebench_v1": 0.7},
+    "multi_turn": {"minimum_reduction": 0.3}
+  }
+}

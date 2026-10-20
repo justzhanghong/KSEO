@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "revision": "2026-10-20.1",
+  "speed": {
+    "input_length_basis": "native_rendered_prompt_including_template",
+    "output_token_basis": "reasoning_plus_final",
+    "ttft_basis": "first_generated_reasoning_or_content_token",
+    "statistic": "mean",
+    "report_statistics": [
+      "mean",
+      "p95",
+      "min",
+      "max"
+    ],
+    "waves_per_concurrency": 5,
+    "prefix_cache_enabled": true,
+    "cache_policy": "zero_read",
+    "warmup_forward_shapes": 1,
+    "failures_allowed": 0
+  },
+  "multi_turn": {
+    "enabled": false,
+    "comparison": "same_artifact_offload_off_vs_on",
+    "statistic": "pooled_request_mean_ttft",
+    "minimum_reduction": 0.3,
+    "comparison_op": ">=",
+    "include_first_turn": true,
+    "turns": 5,
+    "new_user_tokens_per_turn": null,
+    "session_groups_per_concurrency": 5,
+    "output_token_basis": "reasoning_plus_final",
+    "seed": 20261020,
+    "cache_policy": "reuse_allowed",
+    "failures_allowed": 0,
+    "input_sizing": "derive_from_task_shapes_and_verified_context"
+  },
+  "accuracy": {
+    "dataset_authority": "local_frozen",
+    "generation": {
+      "output_limit": "context_remaining",
+      "retry_policy": "none",
+      "temperature": 0,
+      "top_p": 1,
+      "seed": 20261020
+    },
+    "max_failed_requests": 0,
+    "maximum_output_cap_allowed": false,
+    "input_truncation": "reject_unless_explicit_frozen_protocol",
+    "failed_and_unparseable_remain_in_denominator": true,
+    "missing_threshold": "require_task_threshold_or_separately_reviewed_frozen_baseline_threshold; never_inherit_another_model"
+  },
+  "resources": {
+    "max_gpus": null,
+    "max_nodes": null,
+    "allocation": "minimum_feasible_from_verified_model_size_hardware_and_platform_quota",
+    "freeze_before_search": true,
+    "silent_expansion_allowed": false
+  },
+  "budget": {
+    "max_trials": 64,
+    "max_attempts_per_candidate": 2,
+    "max_wall_seconds": 86400,
+    "max_gpu_hours": null,
+    "final_reserve_seconds": 21600,
+    "gpu_hours_rule": "actual_allocated_gpus * max_wall_seconds / 3600, unless user supplies a smaller explicit limit"
+  },
+  "docker": {
+    "base_image_required": true,
+    "allow_edit": true,
+    "allow_update": true,
+    "freeze_base_digest": true,
+    "record_candidate_digest": true,
+    "fresh_final_deployment_required": true
+  },
+  "stability": {
+    "text_samples": 1200,
+    "vision_samples_if_supported": 1200,
+    "seed": 20261020,
+    "random_image_counts": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "failures_allowed": 0,
+    "oom_allowed": 0,
+    "restart_allowed": 0,
+    "incomplete_streams_allowed": 0
+  },
+  "delivery": {
+    "directory": "delivery",
+    "code_publish": "local_bundle_unless_destination_given",
+    "image_publish": "task_platform_registry_if_resolved_and_writable",
+    "deployment_target": "task_platform",
+    "require_fresh_deploy_validation": true,
+    "stop_and_rollback_required": true
+  },
+  "rules": [
+    "模型、输入/输出长度、并发、Thinking、速度/精度阈值和阶段列表来自每次任务，不把示例模型或数值设成全局目标；K 标签默认十进制，输入按 native rendered prompt 总长核对。",
+    "任务给定的输出 token 总量包含 reasoning 与 final；不对最终正文重复追加同样预算。",
+    "每个任务指定的输入 shape/并发分别按请求 mean 验收；p95 等同时报告，不把少量样本统计当分布保证。",
+    "多轮按全部冻结请求的 pooled mean TTFT 计算 1-mean(on)/mean(off)，默认包含第一轮，要求至少 30%；失败不丢弃。",
+    "精度不加人为输出长度限制，按实际上下文余量请求；不得通过省略 max_tokens 而落入服务默认短上限。",
+    "实际上下文/服务生成上限不足时明确报告，禁止静默截断、删长题或缩小精度分母。",
+    "用户提供基础镜像，Agent 默认可修改 Dockerfile、依赖和镜像；每个候选与最终部署记录真实 digest。",
+    "预算默认 24 小时；GPU/节点方案由实际模型和平台配额决定，搜索前冻结。不沿用上个模型的 GPU 数量、拓扑或阈值，资源不足或预算耗尽时报告最佳有效证据。",
+    "源码 commit、权重身份、GPU/驱动、tokenizer/processor、Thinking 生效方式由 Agent 自动探测并冻结。",
+    "未给远端交付地址时产物保存在任务目录，不猜测或写入其他仓库；镜像目标需按平台发现并验权。"
+  ],
+  "api": {
+    "metrics_paths": [
+      "/metrics",
+      "/v1/metrics"
+    ],
+    "metrics_required": [
+      "TTFT",
+      "TPOT_or_documented_ITL",
+      "Running",
+      "Waiting"
+    ],
+    "messages_usage_fields": [
+      "input_tokens",
+      "output_tokens",
+      "cache_creation_input_tokens",
+      "cache_read_input_tokens"
+    ],
+    "cache_usage_semantics": "backend_defined_verified_not_guessed",
+    "overlong_input": "reject",
+    "input_fits_output_exceeds_context": "clip_output_budget_before_reservation",
+    "queue_limits": [
+      "global_running_plus_waiting_requests",
+      "global_reserved_tokens"
+    ],
+    "arbitrary_image_dimension_pixel_format_limits_allowed": false
+  }
+}

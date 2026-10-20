@@ -24,7 +24,9 @@ def write_outputs(directory, contract=None):
         attempts=[];samples=[]
         for row in suite['manifest']:
             content=row.get('gold','synthetic code');aid=row['sample_id']+'-attempt1'
-            attempts.append({'sample_id':row['sample_id'],'attempt_id':aid,'prompt_sha256':row['prompt_sha256'],'final_content':content,'thinking':'synthetic','max_output_tokens':16,'prompt_tokens':8,'finish_reason':'stop'})
+            from kseo.generation import output_budget
+            prompt_tokens=row.get('prompt_tokens',8)
+            attempts.append({'sample_id':row['sample_id'],'attempt_id':aid,'prompt_sha256':row['prompt_sha256'],'final_content':content,'thinking':suite['generation']['thinking'],'max_output_tokens':output_budget(suite['generation'],prompt_tokens),'prompt_tokens':prompt_tokens,'finish_reason':'stop'})
             score={'sample_id':row['sample_id'],'attempt_id':aid,'final_content_sha256':hash_text(content),'status':'completed'}
             if suite['id']=='longbench_v2':score['predicted_choice']=content
             else:

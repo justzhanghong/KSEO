@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 
 from .util import KSEOError, digest, file_digest, finite, positive_int, read_json
+from .generation import validate_generation, output_budget
 
 SUITES = ("rtlbench", "longbench_v2", "livecodebench_v1")
 
@@ -47,12 +48,10 @@ def validate_policy(policy: dict, mode: str) -> None:
             else:
                 _sha(row.get("test_payload_sha256"), "manifest.test_payload_sha256")
         generation = suite.get("generation", {})
-        for key in ("first_max_output_tokens", "context_limit"):
-            positive_int(generation.get(key), "generation." + key)
-        if generation.get("retry_policy") not in ("none", "empty_length_once"):
-            raise KSEOError("最终精度仅支持明确的无重试或空正文 length 一次扩容策略")
-        if not isinstance(generation.get("thinking"), str) or not generation["thinking"]:
-            raise KSEOError("最终精度必须冻结 thinking，不能混用模式")
+        validate_generation(generation)
+        if generation.get("output_limit") == "context_remaining":
+            for row in manifest:
+                output_budget(generation, row.get("prompt_tokens"))
         if mode == "measured":
             from .datasets import load_dataset
             entry = load_dataset(suite.get("dataset_id", ""))
@@ -111,7 +110,12 @@ def evaluate(payload: dict, directory: Path, policy: dict) -> dict:
             for index, attempt in enumerate(trace):
                 if attempt.get("thinking") != generation["thinking"] or attempt.get("prompt_sha256") != reference["prompt_sha256"]:
                     raise KSEOError("原始请求 thinking 或 prompt 与冻结合同不符")
-                budget = generation["first_max_output_tokens"]
+                if generation.get("output_limit") == "context_remaining":
+                    if attempt.get("prompt_tokens") != reference.get("prompt_tokens"):
+                        raise KSEOError("实际 prompt token 数与预先冻结的 native tokenize 结果不符")
+                    budget = output_budget(generation, reference["prompt_tokens"])
+                else:
+                    budget = generation["first_max_output_tokens"]
                 if index:
                     previous = trace[index - 1]
                     if previous["final_content"].strip() or previous.get("finish_reason") != "length":

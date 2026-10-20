@@ -70,7 +70,12 @@ def benchmark(payload: dict, directory: Path, policy: dict) -> dict:
             if row["output_tokens"] < 2:
                 raise KSEOError("TPOT 测量至少需要两个输出 token")
             positive_int(row.get("cache_read_tokens"), "cache_read_tokens", zero=True)
-            if policy.get("zero_cache_reads", True) and row["cache_read_tokens"] != 0:
+            case = expected[case_id]
+            for key in ("output_token_basis", "ttft_basis"):
+                if key in case and row.get(key) != case[key]:
+                    raise KSEOError(f"{case_id} 的 {key} 与计时/token 合同不符")
+            zero_read = case.get("cache_policy") == "zero_read" if "cache_policy" in case else policy.get("zero_cache_reads", True)
+            if zero_read and row["cache_read_tokens"] != 0:
                 raise KSEOError("正式速度合同要求 cache read 为零")
         groups[case_id].append(row)
     cases = {}
@@ -86,7 +91,16 @@ def benchmark(payload: dict, directory: Path, policy: dict) -> dict:
                        "ttft_ms": stats([row["ttft_ms"] for row in good]),
                        "tpot_ms": stats([(row["total_ms"] - row["ttft_ms"]) / (row["output_tokens"] - 1) for row in good])}
     failed = sum(case["failed_requests"] for case in cases.values())
-    return {"cases": cases, "failed_requests": failed, "requests": len(rows), "raw_sha256": file_digest(directory / payload["requests_file"])}
+    result = {"cases": cases, "failed_requests": failed, "requests": len(rows), "raw_sha256": file_digest(directory / payload["requests_file"])}
+    if policy.get("selection_metrics"):
+        values = []
+        for metric in policy["selection_metrics"]:
+            target = finite(metric["target"], "selection.target")
+            if target <= 0 or not metric["field"].startswith("benchmark."):
+                raise KSEOError("搜索评分仅使用正值性能目标")
+            values.append(finite(get_path({"benchmark": result}, metric["field"]), metric["field"]) / target)
+        result["mean_goal_ratio"] = math.fsum(values) / len(values)
+    return result
 
 
 def quality(payload: dict, directory: Path, policy: dict) -> dict:
@@ -96,6 +110,19 @@ def quality(payload: dict, directory: Path, policy: dict) -> dict:
         raise KSEOError("quality sample_id 缺失或重复")
     if policy.get("quality_samples") is not None and len(rows) != policy["quality_samples"]:
         raise KSEOError("quality 样本数与合同不符")
+    generation = policy.get('quality_generation')
+    if generation:
+        from .generation import output_budget
+        from .util import digest
+        manifest = policy['quality_manifest']
+        if ids != [r['sample_id'] for r in manifest]:raise KSEOError('GSM8K 样本集合及顺序必须与冻结 manifest 一致')
+        for row, expected in zip(rows,manifest):
+            for key in ('prompt_sha256','prompt_tokens'):
+                if row.get(key) != expected[key]:raise KSEOError('GSM8K native prompt 与冻结身份不符')
+            if row.get('max_output_tokens') != output_budget(generation,expected['prompt_tokens']):
+                raise KSEOError('GSM8K 不得另加输出 cap 或采用服务的默认短上限')
+            if row.get('thinking') != generation['thinking'] or row.get('generation_policy_sha256') != digest(generation):
+                raise KSEOError('GSM8K 生成策略与合同不符')
     for row in rows:
         if any(type(row.get(key)) is not bool for key in ("correct", "failed", "unparseable")):
             raise KSEOError("quality 记录要求 correct/failed/unparseable 为 boolean")
@@ -124,6 +151,9 @@ def ingest_stage(path: Path, identity: dict, mode: str, stage: str, policy: dict
         result["profile"] = normalize(payload["profile"])
     if stage == "quality" and ("samples_file" in payload or policy.get("quality_samples") is not None):
         result.update(quality(payload, path.parent, policy))
+    if stage == "multi_turn":
+        from .multi_turn import evaluate
+        result.update(evaluate(payload, path.parent, policy["multi_turn"], identity))
     if stage == "final_accuracy":
         from .final_accuracy import evaluate
         result.update(evaluate(payload, path.parent, policy["final_accuracy"]))
@@ -133,7 +163,9 @@ def ingest_stage(path: Path, identity: dict, mode: str, stage: str, policy: dict
 def gates(results: dict, policy: dict, stage: str | None = None, *, phase: str | None = None) -> list[dict]:
     decisions = []
     for gate in policy["gates"]:
-        if phase in ("baseline", "candidate") and gate["stage"] == "final_accuracy":
+        if phase in ("baseline", "candidate") and gate["stage"] in ("final_accuracy", "multi_turn"):
+            continue
+        if phase in ("baseline", "candidate") and policy.get("milestones") and gate["stage"] == "benchmark" and not gate.get("always_required", False):
             continue
         if stage is not None and gate["stage"] != stage:
             continue

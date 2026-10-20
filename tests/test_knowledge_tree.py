@@ -28,7 +28,7 @@ class KnowledgeTreeTests(unittest.TestCase):
         self.assertTrue({f"R{i:02d}" for i in range(1, 21)} <= ids)
         self.assertTrue({f"case:R{i:02d}" for i in range(1, 21)} <= ids)
         self.assertTrue({card["id"] for card in load_cards()} <= ids)
-        self.assertEqual(overview(self.data)["counts"], {"1": 6, "2": 12, "3": 50, "4": 59})
+        self.assertEqual(overview(self.data)["counts"], {"1": 6, "2": 12, "3": 51, "4": 59})
 
     def test_every_case_has_continuous_ancestry_and_explicit_boundary(self):
         for node in self.data["nodes"]:
@@ -45,6 +45,16 @@ class KnowledgeTreeTests(unittest.TestCase):
             if self.nodes[i]["level"] == 4:
                 self.assertEqual(self.nodes[i].get("applies_to", {}), {})
                 self.assertEqual(self.nodes[i].get("requires_capabilities", []), [])
+
+    def test_new_model_defaults_are_unconditional_but_contain_no_example_targets(self):
+        for model in ('unseen_model','glm5_2','deepseek_v4_1'):
+            result=retrieve_hierarchy({'model_family':model},1,self.data)
+            node=next(n for n in result['nodes'] if n['id']=='G-P03')
+            defaults=node['policy']['defaults']
+            self.assertEqual(defaults['speed']['output_token_basis'],'reasoning_plus_final')
+            self.assertNotIn('input_tokens',defaults['speed'])
+            self.assertNotIn('min_scores',defaults['accuracy'])
+            self.assertFalse(node['evidence_boundary']['revalidated_in_kseo'])
 
     def test_conditional_rule_transfers_but_old_model_case_does_not(self):
         context = {"model_family": "new-model", "capabilities": ["pd_disaggregation"]}
@@ -65,7 +75,7 @@ class KnowledgeTreeTests(unittest.TestCase):
 
     def test_current_policy_is_complete_and_unresolved_parameters_stay_unresolved(self):
         result = retrieve_hierarchy({"model_family": "deepseek_v4_1"}, 1, self.data)
-        self.assertEqual(set(result["current_rule_ids"]), {"G-P01", "G-P02", *[f"V41-P{i:02d}" for i in range(1, 12)]})
+        self.assertEqual(set(result["current_rule_ids"]), {"G-P01", "G-P02", "G-P03", *[f"V41-P{i:02d}" for i in range(1, 12)]})
         policies = {n["id"]: n["policy"] for n in result["nodes"] if n["id"].startswith("V41-P")}
         self.assertEqual(policies, load_recipe("deepseek-v4.1-flash")["rules"])
         self.assertFalse(policies["V41-P03"]["enforcement"]["automatic_gate_enabled"])
@@ -97,7 +107,7 @@ class KnowledgeTreeTests(unittest.TestCase):
 
     def test_sources_are_namespaced_hash_addressed_and_not_private_absolute_paths(self):
         source_ids = {s["id"] for s in self.data["sources"]}
-        self.assertEqual(len(source_ids), 72)
+        self.assertEqual(len(source_ids), 74)
         for source in self.data["sources"]:
             self.assertRegex(source["sha256"], r"^[a-f0-9]{64}$")
             if "relative_path" in source:

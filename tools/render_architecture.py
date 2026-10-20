@@ -121,7 +121,23 @@ def other_flows():
     svg.save("optimization-workflows.svg")
 
 
+def role_flow():
+    svg = SVG(1280, 650, 'KSEO · 角色协作', '外部大流程由 System 组织；三方分别交付诊断、候选和独立验收证据')
+    svg.card(44, 125, 1190, 90, 'System 调度器', ['冻结目标与预算 · 先配置搜索 · 按最大瓶颈点路由 · 集成/回退 · 继续迭代或最终交付'], fill='#e7f0ff')
+    for x,title,lines in [
+        (44,'瓶颈分析员 Analyst',['读取：Profile / 请求 / 身份','输出：证据、瓶颈、可检验假设','权限：只写诊断目录']),
+        (454,'开发人员 Developer',['读取：诊断 / 源码 / 经验边界','输出：参数、patch、等价说明','权限：只写提案目录']),
+        (864,'验收人员 Validator',['读取：冻结合同 / oracle / raw','输出：重算指标、门禁及失败证据','权限：不修改目标与候选'])]:
+        svg.card(x, 255, 370, 155, title, lines, size=21, body_size=16)
+    svg.arrow('M414 330 H450'); svg.arrow('M824 330 H860')
+    svg.arrow('M1049 410 V470 H229 V414', dashed=True)
+    svg.text(370, 454, '继续：失败证据 / 实际收益 → System 更新方案与 Profile', 18, color=BLUE)
+    svg.card(44, 520, 1190, 90, '共享基础：可信 Backend、独立源码副本、原始证据、冻结 Validator、状态与预算',
+             ['角色可使用同一模型的独立会话；协议检查不等于 OS sandbox，生产须配置实际写权限隔离。'], size=20)
+    svg.save('roles.svg')
+
+
 if __name__ == "__main__":
     OUT.mkdir(exist_ok=True)
-    architecture(); system_flow(); kernel_flow(); other_flows()
-    print("已生成 Architecture、System、Kernel 与 Configuration/Scheduling 四张独立图。")
+    architecture(); system_flow(); kernel_flow(); other_flows(); role_flow()
+    print("已生成分层 Architecture、各级流程与角色协作图。")

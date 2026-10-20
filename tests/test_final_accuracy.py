@@ -37,6 +37,17 @@ class FinalAccuracyTests(unittest.TestCase):
         self.assertTrue(result['passed']);self.assertEqual(len(result['benchmarks']),3)
         self.assertTrue(all(v['samples']==2 and v['score']==1 for v in result['benchmarks'].values()))
 
+    def test_context_remaining_requires_full_native_budget_on_every_sample(self):
+        for suite in self.policy['suites']:
+            suite['generation'].pop('first_max_output_tokens')
+            suite['generation'].update(output_limit='context_remaining',retry_policy='none')
+            for row in suite['manifest']:row['prompt_tokens']=8
+        validate_policy(self.policy,'synthetic')
+        self.payload=fixture.write_outputs(self.root,self.policy)
+        self.assertTrue(evaluate(self.payload,self.root,self.policy)['passed'])
+        rows=self.rows(0,'attempts');rows[0]['max_output_tokens']=16;self.replace(0,'attempts',rows)
+        with self.assertRaises(KSEOError):evaluate(self.payload,self.root,self.policy)
+
     def test_minus_one_minus_two_are_errors_not_true(self):
         rows=self.rows(2,'samples');rows[0]['test_results']=[-1,-2];self.replace(2,'samples',rows)
         result=evaluate(self.payload,self.root,self.policy)

@@ -10,12 +10,14 @@ from .util import write_json
 
 def emit(*, checks: dict | None = None, runtime: dict | None = None,
          requests: list[dict] | None = None, samples: list[dict] | None = None,
-         profile: dict | None = None, benchmarks: list[dict] | None = None) -> Path:
+         profile: dict | None = None, benchmarks: list[dict] | None = None, multi_turn_runs: dict | None = None) -> Path:
     directory = Path(os.environ["KSEO_STAGE_DIR"])
     result = {"schema_version": 1, "identity": json.loads(Path(os.environ["KSEO_IDENTITY_PATH"]).read_text()),
               "kind": os.environ["KSEO_MODE"], "checks": checks or {}, "runtime": runtime or {}}
     if profile is not None:
         result["profile"] = profile
+    if multi_turn_runs is not None:
+        result["multi_turn_runs"] = multi_turn_runs
     if benchmarks is not None:
         result["benchmarks"] = benchmarks
     for key, rows in (("requests_file", requests), ("samples_file", samples)):

@@ -72,3 +72,9 @@ patch 只能修改 extractor 声明的 editable_files。局部证据绑定 patch
 外部 Agent 的 OS 权限、真实后端的 GPU 采样和远端任务清理、模型语义适配、最终镜像固化及长期稳定性由对应 adapter 实现。CPU 示例用于验证流水线，不能解释为真实模型的新性能收益。
 
 四张 SVG 的源生成器是 `tools/render_architecture.py`。可通过 `python3 tools/render_architecture.py` 重建，图中不使用跨层回路线。
+
+## 角色协作
+
+瓶颈分析员、开发人员与独立 Validator 的职责和权限另见 [角色设计](roles.md)，与 Configuration、Scheduling、Kernel 三个优化子流程分别描述。
+
+![角色协作](roles.svg)

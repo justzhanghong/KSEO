@@ -40,7 +40,7 @@ pipeline 必须配置 `profile` step，其输出遵守 [标准化 Profile 协议
 
 ## 阶段和命令
 
-阶段顺序固定为 `preflight`、`build`、`deploy`、`smoke`、`profile`、`benchmark`、`quality`、`api`、`stability`、`final_accuracy`。benchmark 必须存在；真实模式还要求 preflight、cleanup、final_accuracy 和最终复验。实际合同的质量、API 和稳定性门禁需明确列入 steps。`final_accuracy` 只在最终 trial 运行，三套本地冻结测试集必须齐全并配置硬门禁；详见 [最终精度](final-accuracy.md)。
+阶段顺序固定为 `preflight`、`build`、`deploy`、`smoke`、`profile`、`benchmark`、`quality`、`api`、`stability`、`multi_turn`、`final_accuracy`。benchmark 必须存在；真实模式还要求 preflight、cleanup、final_accuracy 和最终复验。实际合同的质量、API 和稳定性门禁需明确列入 steps。`final_accuracy` 只在最终 trial 运行，三套本地冻结测试集必须齐全并配置硬门禁；详见 [最终精度](final-accuracy.md)。
 
 命令中支持 `{python}`、`{config_dir}`、`{package_dir}`、`{run_dir}`、`{trial_dir}`、`{source_dir}`、`{stage_dir}`。替换后的每个元素仍是一个 argv，不隐式执行 shell。敏感配置通过环境注入，日志默认不记录 argv 或 env；adapter 自身也应避免输出 credentials。
 
@@ -79,3 +79,28 @@ GPU 小时按声明 GPU 数量乘控制器计费时间保守估算，包含加�
 Grid search 在空间耗尽或预算到达后停止。Agent 可以显式 stop。相同源码、patch 和参数的有效重复提案会停止循环；缺少可行候选、资源清理失败和最终验证失败都有独立状态。
 
 pipeline 还会在没有可执行热点、达到子流程次数上限或进入最终复验预留时间时停止。Kernel 局部失败消耗时间与子流程预算，不创建 E2E trial；局部通过后发生 E2E 失败时保留原 best。子流程与 E2E 的状态分别写入 `workflows/` 和 `trials/`，并通过 `workflow-tree.json` 关联。
+
+
+## 新模型默认与阶段目标
+
+0.5.0 提供 `kseo prepare`：TaskBrief 的具体目标生成草稿，外层 Agent 自动发现其余环境信息后冻结真实合同。模型、长度、并发、Thinking、阈值和 milestone 列表每次输入；不继承示例数值。详见 [自举流程](agent-bootstrap.md) 和 [角色协议](roles.md)。
+
+`validation.milestones` 为有序阶段，每项 `name` 唯一且含同一套 `benchmark.*` 数值 gates，阈值逐步收紧，最后一项与正式性能门禁完全一致。`benchmark.failed_requests == 0` 必须声明 `always_required=true`。阶段搜索只暂缓最终性能线，数值、精度、身份、API、稳定性及零请求失败不放宽。搜索 best 记录 `SEARCH_CORRECTNESS_AND_PROGRESS`；目标未达返回 `TARGETS_NOT_MET`，不能 `COMPLETED`。
+
+`selection_metrics` 为各个 shape/并发的 TTFT/TPOT 指标及本次 target，归一化均值生成 `benchmark.mean_goal_ratio`。System 先比较已完成阶段数，再比较 objective；此评分只用于搜索，不能替代各项硬门禁。
+
+`validation.quality_generation` 与 `quality_manifest` 冻结 GSM8K 的完整有序样本、prompt 摘要及 native token 数。启用时，逐题原始记录另需 `prompt_sha256`、`prompt_tokens`、`thinking`、`max_output_tokens` 和 `generation_policy_sha256`。新默认 `context_remaining` 禁止人工短 cap，计分器仍须是独立可信的实际 evaluator。
+
+## 多轮配对验收
+
+按任务目标启用最终阶段 `multi_turn`，并配置 `validation.multi_turn` 及 `multi_turn.passed == true`。manifest 每项含唯一 `request_id`、`session_id`、从 0 连续的 `turn`、`prompt_sha256`、`input_tokens`、`output_tokens`、`concurrency`；每个 session 至少两轮。
+
+adapter 输出 `multi_turn_runs.off/on`，每组含最终候选的 `artifact_identity`、实际完整 `parameters`、`requests_file` 及 SHA256。两组只允许指定 `parameter_key`（默认 `kv_offloading`）不同。原始每行按 manifest 顺序，另含真实 `status`、`ttft_ms`、`cache_read_tokens`、`offload_read_bytes` 和 `offload_write_bytes`。
+
+默认按包括第一轮的全部请求 pooled mean 计算收益，阈值 ≥30%。有失败不使用其余成功样本伪造完整均值；OFF 组无 offload 读写，ON 组必须有实际读和写。不能把每请求百分比降幅的平均值、p95 或只保留后几轮替代整体均值。两组完整历史输入必须相同，不让各自生成的历史造成配对负载漂移。
+
+## 可更新镜像与最终新部署
+
+新自举合同设置 `validation.docker_artifacts=true`。`inputs.image` 冻结用户基础 digest；build 的 `runtime.artifact` 含实际候选 `image`（完整 digest）、`base_image`、`source_revision` 和 `parameters_sha256`。从 deploy 起，各阶段 runtime 必须携带同一 artifact 和同一 `deployment_id`。build 完成后，后续命令可读取 `KSEO_ARTIFACT_PATH`。
+
+最终 deploy 还需实际 `fresh_deployment=true`，部署 ID 不能复用历史搜索实例。完整通过后的 bundle 记录最终复验的实际镜像，不能误用搜索阶段镜像身份。真实构建、部署、元数据采集仍由可信 Backend 完成；程序不会仅凭字符串声明证明远端构建真实发生。

@@ -64,7 +64,7 @@ def render() -> None:
            "# 按模型和明确能力筛选；同时返回祖先、匹配案例和来源", "kseo knowledge --hierarchy --context examples/knowledge/glm52-pd-context.json --limit 24", "```", "",
            "`--tree`/`--node` 是完整导航，不隐含条件已满足；不能同时传 `--context`。`--hierarchy` 才筛选条件，缺少能力或硬件字段不假定匹配。示例 context 只演示筛选，不证明该部署已经支持相应能力。", "",
            "旧 `knowledge --context ...` 继续返回原有平面卡片；新分层接口覆盖本次跨模型规则。`--extra` 只用于旧接口，未审阅导入不会自动进入层级。", "",
-           "外部 Agent 的 `knowledge_hierarchy` 始终带 6 条原则、全模型 G-P01/G-P02 及所选方法、规则、匹配案例、祖先 ID 和来源。`--limit`/top-k 只截断迁移规则；匹配 V4.1 时，11 条模型现行规则完整保留，`model_recipe` 仍完整提供。当前合同和用户规则优先，旧参数、learned-experience 和历史案例不得覆盖；未知阈值仍待确认，不能自动 PASS。", "",
+           "外部 Agent 的 `knowledge_hierarchy` 始终带 6 条原则、全模型 G-P01/G-P02/G-P03 及所选方法、规则、匹配案例、祖先 ID 和来源。`--limit`/top-k 只截断迁移规则；匹配 V4.1 时，11 条模型现行规则完整保留，`model_recipe` 仍完整提供。当前合同和用户规则优先，旧参数、learned-experience 和历史案例不得覆盖；未知阈值仍待确认，不能自动 PASS。", "",
            "## 原则 → 方法 → 规则", ""]
     for principle in children[None]:
         doc += [f"<a id=\"{principle['id'].lower()}\"></a>", f"### {principle['id']} {principle['title']}", "", principle["summary"], ""]
@@ -73,6 +73,7 @@ def render() -> None:
             doc += [f"{i}. {step}" for i, step in enumerate(method["procedure"], 1)]
             doc += ["", "所需证据：" + "；".join(method["required_evidence"]) + "。", "",
                     "场景规则：" + "、".join(link(rule) + " " + rule["title"] for rule in children[method["id"]]) + "。", ""]
+    doc += ["G-P03 固定测量语义与自举约定；模型及全部目标数值来自本次任务。详见 [自举与默认口径](agent-bootstrap.md)。", ""]
     doc += ["## 场景规则细目", "", "G-P01 是本轮明确补充的全模型前提。V4.1 原规则完整内容见模型 recipe；本表不重写它的阈值、停用项或计数语义。", ""]
     for rule in sorted((n for n in nodes if n["level"] == 3), key=lambda n: n["id"]):
         doc += [f"<a id=\"{rule['id'].lower()}\"></a>", f"### {rule['id']} {rule['title']}", "",

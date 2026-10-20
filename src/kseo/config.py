@@ -8,7 +8,7 @@ from typing import Any
 
 from .util import KSEOError, canonical, finite, positive_int, read_json
 
-STAGES = ("preflight", "build", "deploy", "smoke", "profile", "benchmark", "quality", "api", "stability", "final_accuracy")
+STAGES = ("preflight", "build", "deploy", "smoke", "profile", "benchmark", "quality", "api", "stability", "multi_turn", "final_accuracy")
 OPS = ("<", "<=", ">", ">=", "==", "!=")
 
 
@@ -65,6 +65,20 @@ def validate(config: dict[str, Any]) -> dict[str, Any]:
     if config["mode"] == "measured" and ("preflight" not in names or not config.get("cleanup")):
         raise KSEOError("measured 模式要求 preflight 和幂等 cleanup adapter")
     validation = config["validation"]
+    if validation.get('quality_generation'):
+        from .generation import validate_generation, output_budget
+        from .final_accuracy import _sha
+        gen = validation['quality_generation']
+        validate_generation(gen)
+        manifest = validation.get('quality_manifest', [])
+        if not manifest or len(manifest) != validation.get('quality_samples'):
+            raise KSEOError('GSM8K 需要完整冻结 quality_manifest')
+        ids = [r.get('sample_id') for r in manifest]
+        if any(not isinstance(i,str) or not i for i in ids) or len(set(ids)) != len(ids):
+            raise KSEOError('GSM8K manifest sample_id 缺失或重复')
+        for row in manifest:
+            _sha(row.get('prompt_sha256'),'quality.prompt_sha256')
+            output_budget(gen,row.get('prompt_tokens'))
     if config["mode"] == "measured" or "final_accuracy" in names or "final_accuracy" in validation:
         from .final_accuracy import validate_policy
         if "final_accuracy" not in names or "final_accuracy" not in validation or not config.get("final_validation", True):
@@ -73,6 +87,20 @@ def validate(config: dict[str, Any]) -> dict[str, Any]:
         if not any(g.get("stage") == "final_accuracy" and g.get("field") == "final_accuracy.passed"
                    and g.get("op") == "==" and g.get("value") is True for g in validation.get("gates", [])):
             raise KSEOError("最终精度必须配置 final_accuracy.passed == true 硬门禁")
+    from . import milestones
+    milestones.validate(validation)
+    if milestones.enabled(config) and not any(g.get("stage") == "benchmark" and g.get("field") == "benchmark.failed_requests"
+            and g.get("op") == "==" and g.get("value") == 0 and g.get("always_required") is True
+            for g in validation["gates"]):
+        raise KSEOError("阶段搜索必须始终要求 benchmark.failed_requests == 0，不能放宽失败率")
+    if "multi_turn" in names or "multi_turn" in validation:
+        from .multi_turn import validate_policy
+        if "multi_turn" not in names or "multi_turn" not in validation or not config.get("final_validation", True):
+            raise KSEOError("多轮验收必须声明最终阶段与完整策略")
+        validate_policy(validation["multi_turn"])
+        if not any(g.get("stage") == "multi_turn" and g.get("field") == "multi_turn.passed"
+                and g.get("op") == "==" and g.get("value") is True for g in validation["gates"]):
+            raise KSEOError("多轮验收必须包含 multi_turn.passed == true 硬门禁")
     cases = validation.get("cases", [])
     if not cases or len({c.get("id") for c in cases}) != len(cases):
         raise KSEOError("validation.cases 不能为空且 id 必须唯一")
@@ -81,6 +109,8 @@ def validate(config: dict[str, Any]) -> dict[str, Any]:
             raise KSEOError("case id 只能包含英文、数字、下划线和连字符")
         for key in ("requests", "input_tokens", "output_tokens"):
             positive_int(case.get(key), f"case.{key}")
+        if case.get("cache_policy", "zero_read") not in ("zero_read", "reuse_allowed"):
+            raise KSEOError("case.cache_policy 必须明确为 zero_read/reuse_allowed")
     gates = validation.get("gates", [])
     if not gates:
         raise KSEOError("至少需要一个明确验收门禁")
@@ -127,6 +157,8 @@ def validate(config: dict[str, Any]) -> dict[str, Any]:
             raise KSEOError("min_expected_gain 不能小于 0")
         if "scheduling" in optimizer:
             validate_command(optimizer["scheduling"])
+        if 'analyst' in optimizer:
+            validate_command(optimizer['analyst'])
         if "kernel" in optimizer:
             kernel = optimizer["kernel"]
             if not isinstance(kernel, dict):

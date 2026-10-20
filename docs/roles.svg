@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="650" viewBox="0 0 1280 650" role="img" aria-labelledby="title desc">
+<title id="title">KSEO · 角色协作</title><desc id="desc">外部大流程由 System 组织；三方分别交付诊断、候选和独立验收证据</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="#2475dd"/></marker></defs>
+<rect width="1280" height="650" rx="20" fill="#f5f8fc"/>
+<g font-family="Noto Sans CJK SC, Microsoft YaHei, sans-serif">
+<text x="44" y="55" font-size="30" fill="#10294a" font-weight="700">KSEO · 角色协作</text>
+<text x="44" y="90" font-size="17" fill="#56708b">外部大流程由 System 组织；三方分别交付诊断、候选和独立验收证据</text>
+<rect x="44" y="125" width="1190" height="90" rx="12" fill="#e7f0ff" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="62" y="159" font-size="20" fill="#10294a" font-weight="700">System 调度器</text>
+<text x="62" y="189" font-size="16" fill="#56708b">冻结目标与预算 · 先配置搜索 · 按最大瓶颈点路由 · 集成/回退 · 继续迭代或最终交付</text>
+<rect x="44" y="255" width="370" height="155" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="62" y="289" font-size="21" fill="#10294a" font-weight="700">瓶颈分析员 Analyst</text>
+<text x="62" y="319" font-size="16" fill="#56708b">读取：Profile / 请求 / 身份</text>
+<text x="62" y="343" font-size="16" fill="#56708b">输出：证据、瓶颈、可检验假设</text>
+<text x="62" y="367" font-size="16" fill="#56708b">权限：只写诊断目录</text>
+<rect x="454" y="255" width="370" height="155" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="472" y="289" font-size="21" fill="#10294a" font-weight="700">开发人员 Developer</text>
+<text x="472" y="319" font-size="16" fill="#56708b">读取：诊断 / 源码 / 经验边界</text>
+<text x="472" y="343" font-size="16" fill="#56708b">输出：参数、patch、等价说明</text>
+<text x="472" y="367" font-size="16" fill="#56708b">权限：只写提案目录</text>
+<rect x="864" y="255" width="370" height="155" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="882" y="289" font-size="21" fill="#10294a" font-weight="700">验收人员 Validator</text>
+<text x="882" y="319" font-size="16" fill="#56708b">读取：冻结合同 / oracle / raw</text>
+<text x="882" y="343" font-size="16" fill="#56708b">输出：重算指标、门禁及失败证据</text>
+<text x="882" y="367" font-size="16" fill="#56708b">权限：不修改目标与候选</text>
+<path d="M414 330 H450" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<path d="M824 330 H860" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)"/>
+<path d="M1049 410 V470 H229 V414" fill="none" stroke="#2475dd" stroke-width="2.2" marker-end="url(#arrow)" stroke-dasharray="7 5"/>
+<text x="370" y="454" font-size="18" fill="#2475dd">继续：失败证据 / 实际收益 → System 更新方案与 Profile</text>
+<rect x="44" y="520" width="1190" height="90" rx="12" fill="white" stroke="#d5e1ef" stroke-width="1.5"/>
+<text x="62" y="554" font-size="20" fill="#10294a" font-weight="700">共享基础：可信 Backend、独立源码副本、原始证据、冻结 Validator、状态与预算</text>
+<text x="62" y="584" font-size="16" fill="#56708b">角色可使用同一模型的独立会话；协议检查不等于 OS sandbox，生产须配置实际写权限隔离。</text>
+</g></svg>

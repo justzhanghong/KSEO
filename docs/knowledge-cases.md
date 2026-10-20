@@ -1592,6 +1592,20 @@
 - SHA256：`84d61ce28f3155a791f12f91ba86bc9b4e7cfd5be4531f1acb0d979fdcd82ea0`。
 - 审阅范围：当前用户指定本地冻结测试集优先；不替换官方版本，不按重复内容擅自去重或改分母。
 
+<a id="source-policy-u04"></a>
+### policy:U04
+
+- 位置：`用户明确指令`。
+- SHA256：`c07e9012cccfeb41526f39e36757ec11f2c7e37a4c09c9345deb7d8b6517666f`。
+- 审阅范围：当前用户默认约定与允许 Agent 补齐其他信息；不含真实测量或 GPU 部署结论。
+
+<a id="source-policy-u05"></a>
+### policy:U05
+
+- 位置：`用户明确指令`。
+- SHA256：`fd9c1c7d5881bfeba2da21c3ef72418d74847bdbf22f01019e98ed05d8dae72f`。
+- 审阅范围：模型和具体任务数值是每次输入，不固化示例的模型、资源或阈值。
+
 <a id="source-v41-s01"></a>
 ### v41:S01
 

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 
-from .. import profiling, source
-from ..executor import StepFailure
+from .. import profiling, source, roles
+from ..executor import StepFailure, execute
 from ..util import KSEOError, confined, digest, file_digest, read_json, write_json
 from .configuration import next_configuration
 from .kernel import KernelRejected, KernelWorkflow
@@ -86,13 +87,54 @@ class Pipeline:
                                             "parameters_sha256": digest(selected["parameters"]), "profile_sha256": digest(profile)}
             seen = {item["key"] for item in self.state["attempts"]
                     if item["key"] and item["status"] != "INTERRUPTED"}
+            priority = None
+            if 'analyst' in self.settings:
+                request = roles.diagnosis_request(profile, selected['identity'], selected['parameters'], runner.config['validation'], seen,
+                    evidence={'context': runner.config['context'], 'resources': runner.config['resources'],
+                              'budget': runner.config['budget'], 'remaining_seconds': runner.remaining(),
+                              'source_dir': str(base), 'trial_dir': str(runner.root/selected['directory']), 'run_dir': str(runner.root),
+                              'runtime': {name: result.get('runtime',{}) for name,result in selected.get('results',{}).items()},
+                              'history': [{'id': t['id'], 'status': t['status'], 'directory': t['directory'], 'error': t.get('error'), 'gates': t.get('gates',[])}
+                                          for t in runner.state['trials']]})
+                cached = self.state.get('diagnosis', {})
+                if cached.get('request_sha256') == digest(request):
+                    diagnosis_path = confined(runner.root, cached['output'])
+                    if file_digest(diagnosis_path) != cached['output_sha256']:
+                        raise KSEOError('瓶颈诊断产物已变化')
+                    rows = roles.validate_diagnosis(read_json(diagnosis_path), request)
+                else:
+                    analysis, analysis_dir = self.begin('analysis', parent=selected['id'])
+                    request_path, diagnosis_path = analysis_dir/'request.json', analysis_dir/'diagnosis.json'
+                    write_json(request_path, request)
+                    request_sha = file_digest(request_path)
+                    variables = {'run_dir': str(runner.root), 'source_dir': str(base), 'analysis_dir': str(analysis_dir),
+                                 'config_dir': runner.state['config_dir'], 'package_dir': str(Path(__file__).resolve().parents[1]), 'python': sys.executable}
+                    try:
+                        runner.check_tools()
+                        execute(self.settings['analyst'], analysis_dir/'process', variables,
+                                {'KSEO_ANALYST_REQUEST': str(request_path), 'KSEO_ANALYST_OUTPUT': str(diagnosis_path), 'KSEO_MODE': runner.config['mode']}, remaining=runner.remaining())
+                        source.assert_unchanged(base, revision)
+                        runner.check_tools()
+                        if file_digest(request_path) != request_sha:
+                            raise KSEOError('瓶颈分析员改写了输入请求')
+                        rows = roles.validate_diagnosis(read_json(diagnosis_path), request)
+                    except (KSEOError, StepFailure) as exc:
+                        self.finish_local(analysis, 'ANALYSIS_FAILED', str(exc))
+                        self.state['stop_reason'] = 'ANALYSIS_FAILED'
+                        return None
+                    self.state['diagnosis'] = {'request_sha256': digest(request), 'output': str(diagnosis_path.relative_to(runner.root)),
+                                               'output_sha256': file_digest(diagnosis_path)}
+                    self.finish_local(analysis, 'DIAGNOSED')
+                priority = [row['hotspot_id'] for row in rows]
             decision = profiling.route(profile, {lane for lane in ("scheduling", "kernel") if lane in self.settings},
-                                       seen, context_id, min_gain=self.settings.get("min_expected_gain", 0))
+                                       seen, context_id, min_gain=self.settings.get("min_expected_gain", 0), priority=priority)
             if decision is None:
                 self.state["stop_reason"] = "NO_ACTIONABLE_HOTSPOT"
                 runner.save()
                 return None
             lane, hotspot = decision["lane"], decision["hotspot"]
+            if priority is not None:
+                hotspot = {**hotspot, 'analyst_diagnosis': next(row for row in rows if row['hotspot_id'] == hotspot['id'])}
             attempt, directory = self.begin(lane, parent=selected["id"], key=decision["key"], hotspot=hotspot)
             runner.event("strategy_route", workflow=attempt["id"], lane=lane, hotspot=hotspot["id"],
                          expected_saved_fraction=hotspot["expected_saved_fraction"])
@@ -137,7 +179,8 @@ class Pipeline:
         card = {"id": trial["id"], "title": trial["hypothesis"], "status": status,
                                 "applies_to": {key: value for key, value in runner.config["context"].items() if key != "capabilities"},
                                 "observations": {"mode": runner.config["mode"], "lane": attempt["lane"],
-                                                 "objective": trial.get("score"), "gates": trial["gates"]},
+                                                 "objective": trial.get("score"), "gates": trial["gates"], "acceptance_scope": trial.get("acceptance_scope"),
+                                                 "milestones": trial.get("milestones", [])},
                                 "provenance": {"trial": trial["directory"], "contract_sha256": runner.state["contract_sha256"]}}
         memory["cards"] = [row for row in memory["cards"] if row["id"] != trial["id"]] + [card]
         write_json(memory_path, memory)

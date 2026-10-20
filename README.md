@@ -12,7 +12,7 @@ KSEO 参考 GEAK 的 System 与 Kernel 分层设计，组织端到端推理优�
 
 优化能力分为 **Configuration、Scheduling、Kernel** 三个子流程。共享 Runner 提供执行、状态和资源能力；System 层负责端到端选择。任务书、历史实验、社区知识和 profiling 都是输入来源，工作流按优化职责划分。
 
-当前提供标准化热点与 Amdahl 排序、配置优先搜索、Scheduling 提案、独立 Kernel oracle 与局部验证、可逆集成、E2E 门禁、恢复和交付包。真实模型通过 Backend adapters 和外部 coding Agent 接入，内置 CPU 示例始终标记为 `synthetic`。
+当前提供标准化瓶颈与 Amdahl 排序、配置优先搜索、Scheduling 提案、独立 Kernel oracle 与局部验证、可逆集成、E2E 门禁、恢复和交付包。真实模型通过 Backend adapters 和外部 coding Agent 接入，内置 CPU 示例始终标记为 `synthetic`。
 
 ## Architecture
 
@@ -69,6 +69,17 @@ runs/demo-pipeline/
 
 ## 接入真实模型
 
+面向每次不同模型的简要输入，优先使用新的自举入口。模型、长度、并发、Thinking、各项阈值和阶段目标都来自本次任务；统一默认只定义测量和执行语义。
+
+```bash
+kseo defaults
+kseo prepare examples/brief/model-a.json --out ./runs/model-a-intake
+# 外层 coding Agent 执行 bootstrap-request.json，生成实际 adapters 与冻结 task.json
+kseo doctor /path/to/task.json --brief ./runs/model-a-intake/brief.json
+```
+
+输出总 token 默认包含 reasoning；多轮收益默认按含第一轮的整体平均 TTFT 下降 ≥30%；精度不加人工输出 cap；允许更新 Docker，同时核对候选镜像和最终新部署身份。`prepare` 不启动 GPU；`doctor` 是静态检查，实际运行仍由平台 Backend 和模型 adapters 完成。详见 [新模型自举与默认口径](docs/agent-bootstrap.md)。
+
 先建立一个业务 profile，固定负载、thinking、warmup、缓存政策、验收规则和预算。此后可以用模型、源码、镜像和服务器信息生成任务：
 
 ```bash
@@ -90,11 +101,13 @@ kseo run task.json --run-dir ./runs/model-001
 
 ## Agent 与源码优化
 
+角色分为 **瓶颈分析员、开发人员、验收人员**，由 System 调度。分析员提交绑定当前 Profile 的诊断，开发人员只提交参数与 patch，独立 Validator 从冻结合同和原始结果重算结论。角色可以使用同一个模型的独立会话；默认验收裁决为程序化 Validator。执行 `kseo roles` 查看协议，详见 [角色设计与权限](docs/roles.md)。
+
 `optimizer.kind=pipeline` 使用分层流水线：先执行有独立预算的 Configuration sweep，再按当前 Profile 选择 Scheduling 或 Kernel。Kernel 子流程包含 extractor、proposer 和独立 validator，只有局部验证通过的 patch 才能进入 System 集成。
 
 `grid` 和 `agent` 仍保留为基础调用模式；`agent` 读取 `request.json` 并返回 `proposal.json` 和可选 `patch.diff`。
 
-外部 Agent 负责分析和提出假设。KSEO 负责限制参数空间、在独立 Git 副本应用补丁、执行验证和维护最佳有效候选。每次修改都要通过完整门禁；候选不能修改合同或 Validator。KSEO 本身不是 OS sandbox，外部 Agent 的文件和命令权限应由调用它的环境控制。
+外部 Agent 负责分析和提出假设。KSEO 负责限制参数空间、在独立 Git 副本应用补丁、执行验证和维护最佳有效候选。配置阶段目标时，搜索中的正确中间候选可保留，最终交付仍须通过完整目标与全部验收；候选不能修改合同或 Validator。KSEO 本身不是 OS sandbox，外部 Agent 的文件和命令权限应由调用它的环境控制。
 
 参见 [Agent 工作流和提案协议](docs/agent-workflow.md)。
 
@@ -112,7 +125,7 @@ kseo validate ./runs/model-001/task.json \
 
 ## 经验转换
 
-经验按 **原则 → 方法 → 场景规则 → 案例与来源** 由粗到细组织：6 条原则、12 个方法、50 条规则、59 个案例，关联 72 条来源记录。原有 9 张代表性卡片和 V4.1 专项包均已纳入；本轮增加 GLM-5.1/5.2、V4-Flash 与 V4.1-Flash 的 20 条跨模型经验，覆盖生产 shape、峰值显存、CUDA Graph、最大瓶颈点、真实 P/D、MTP/Batch/KV 状态、API 与证据审查；新增 13 条最终精度经验及全模型规则 G-P02。
+经验按 **原则 → 方法 → 场景规则 → 案例与来源** 由粗到细组织：6 条原则、12 个方法、51 条规则、59 个案例，关联 74 条来源记录。原有 9 张代表性卡片和 V4.1 专项包均已纳入；本轮增加 GLM-5.1/5.2、V4-Flash 与 V4.1-Flash 的 20 条跨模型经验，覆盖生产 shape、峰值显存、CUDA Graph、最大瓶颈点、真实 P/D、MTP/Batch/KV 状态、API 与证据审查；新增 13 条最终精度经验及全模型规则 G-P02；G-P03 补充新模型自举与统一默认，具体目标仍由本次任务提供。
 
 **全模型规则 G-P01：速度优化必须数学等价，只允许浮点自身引入的微小数值差异。** 不要求 bitwise 一致；容差须在搜索前按 dtype、算子和 shape 冻结。数值接近或质量分数通过不能单独证明数学等价，历史经验不能豁免该前提。
 
@@ -135,7 +148,7 @@ kseo ingest /path/to/task.md /path/to/acceptance.json --out imported.json
 
 `ingest` 建立 `NEEDS_REVIEW` 卡片，做基础脱敏，不会把历史 PASS 自动当作新任务成功。补齐适用条件、来源和迁移限制并审查后，才能接入自动检索。见 [流程与经验迁移](docs/conversion.md)。
 
-Agent 请求新增 `knowledge_hierarchy`，携带原则、所选方法、规则、匹配案例、祖先关系与来源。全模型 G-P01/G-P02 始终提供，V4.1 的 `model_recipe` 仍完整提供 11 条模型现行规则，均不受 top-k 截断。2048-token 含义、并发增长阈值和计时口径中的未明确项均保留为待确认，不能自动判 PASS。详见 [V4.1-Flash 优化经验](docs/models/deepseek-v4.1-flash.md)。知识和经验包尚未替代真实部署、warmup 审计和 Feature 采集 adapter。
+Agent 请求新增 `knowledge_hierarchy`，携带原则、所选方法、规则、匹配案例、祖先关系与来源。全模型 G-P01/G-P02/G-P03 始终提供，V4.1 的 `model_recipe` 仍完整提供 11 条模型现行规则，均不受 top-k 截断。2048-token 含义、并发增长阈值和计时口径中的未明确项均保留为待确认，不能自动判 PASS。详见 [V4.1-Flash 优化经验](docs/models/deepseek-v4.1-flash.md)。知识和经验包尚未替代真实部署、warmup 审计和 Feature 采集 adapter。
 
 ## 本地数据与最终精度
 
@@ -165,8 +178,8 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 ## 当前边界
 
 - 已实现 System 与三个优化子流程；实际 GPU 采样、Kernel 提取、平台部署及模型特定操作由 adapter 接入。
-- Configuration 使用有限网格搜索；Scheduling 与 Kernel 可接外部 Agent。当前没有内置 LLM 服务凭据或厂商 SDK。
-- 最终复验在新的 trial 中重跑 E2E，并运行三项最终精度。真实请求、RTL/代码测试、冷启动和最终镜像核验仍需实际 profile 与 adapter。
+- Configuration 使用有限网格搜索；可选瓶颈分析员、Scheduling 与 Kernel 可接外部 Agent。当前没有内置 LLM 服务凭据或厂商 SDK。
+- 最终复验在新的 trial 中重跑 E2E，并运行三项最终精度；新自举合同同时要求实际镜像绑定和 fresh deployment。真实请求、RTL/代码测试、冷启动和最终镜像核验仍需实际 profile 与 adapter。
 - `bundle/` 输出本地源码与配置交付包。容器镜像构建、签名、发布和实际 runtime 核验由 build/deploy adapter 负责，KSEO 不会假装已生成或验收真实镜像。
 - 性能测量依据 adapter 提供的原始记录。可信 adapter、计时语义和外部 Agent 的运行隔离仍是实验可信度的前提。
 

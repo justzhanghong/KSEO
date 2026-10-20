@@ -27,6 +27,10 @@ def load_hierarchy() -> dict:
     data["nodes"] += accuracy["nodes"]
     data["sources"] += accuracy["sources"]
     data["capability_vocabulary"]["final_accuracy"] = "当前任务已声明最终三项精度验收；不代表评测已通过"
+    autonomy = _read("autonomy-policy.json")
+    autonomy["nodes"][0]["policy"]["defaults"] = _read("defaults.json")
+    data["nodes"] += autonomy["nodes"]
+    data["sources"] += autonomy["sources"]
     recipe = load_recipe("deepseek-v4.1-flash")
     base = {card["id"]: card for card in _read("experience.json")["cards"]}
     v41 = {card["id"]: card for card in recipe["cards"]}

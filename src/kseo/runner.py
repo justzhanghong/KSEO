@@ -9,7 +9,7 @@ import time
 import uuid
 from pathlib import Path
 
-from . import __version__, optimizer, source, validation
+from . import __version__, optimizer, source, validation, milestones, artifacts
 from .config import load, validate
 from .executor import StepFailure, execute, expand, recover_processes
 from .locking import file_lock, resource_locks
@@ -60,6 +60,8 @@ class Runner:
                "KSEO_PARAMETERS_PATH": str(trial_dir / "parameters.json"),
                "KSEO_RESULT_PATH": str(directory / "result.json"), "KSEO_STAGE_DIR": str(directory),
                "KSEO_MODE": self.config["mode"]}
+        if (trial_dir/'artifact.json').is_file():
+            env['KSEO_ARTIFACT_PATH'] = str(trial_dir/'artifact.json')
         if self.state.get("active_workflow"):
             env["KSEO_WORKFLOW_DIR"] = str(self.root / self.state["active_workflow"])
         return variables, env
@@ -94,7 +96,7 @@ class Runner:
             return False
 
     def trial(self, parameters: dict, phase: str, base: Path, patch: Path | None, hypothesis: str,
-              *, kernel_evidence: dict | None = None, workflow: dict | None = None) -> dict:
+              *, kernel_evidence: dict | None = None, workflow: dict | None = None, equivalence: dict | None = None) -> dict:
         number = len(self.state["trials"])
         identifier = f"t{number:04d}"
         relative = f"trials/{identifier}"
@@ -107,7 +109,11 @@ class Runner:
         directory.mkdir(parents=True)
         record = {"id": identifier, "directory": relative, "phase": phase, "status": "PREPARING",
                   "parameters": parameters, "hypothesis": hypothesis, "results": {}, "gates": [],
+                  "acceptance_scope": "SEARCH_CORRECTNESS_AND_PROGRESS" if milestones.enabled(self.config) and phase != "final" else "FULL_TRIAL_CONTRACT",
                   "started_at": now(), "cleanup": "PENDING"}
+        from .roles import contract
+        record['acceptance_role'] = contract('validator')
+        if equivalence is not None:record['equivalence_rationale'] = equivalence
         if kernel_evidence:
             record["kernel_evidence"] = kernel_evidence
         if workflow:
@@ -141,7 +147,7 @@ class Runner:
             self.save()
             for step in self.config["steps"]:
                 stage = step["name"]
-                if stage == "final_accuracy" and phase != "final":
+                if stage in ("multi_turn", "final_accuracy") and phase != "final":
                     continue
                 record["stage"] = stage
                 self.save()
@@ -153,6 +159,11 @@ class Runner:
                 result_path = Path(variables["stage_dir"]) / "result.json"
                 result = validation.ingest_stage(result_path, identity, self.config["mode"], stage, self.config["validation"])
                 record["results"][stage] = result
+                previous = [t.get('results',{}).get('deploy',{}).get('runtime',{}).get('deployment_id') for t in self.state['trials'] if t['id'] != identifier]
+                built = artifacts.validate(record['results'], identity, self.config['validation'], phase=phase, previous_deployments=previous)
+                if built is not None:
+                    record['artifact'] = built
+                    write_json(directory/'artifact.json', built)
                 decisions = validation.gates(record["results"], self.config["validation"], stage, phase=phase)
                 record["gates"].extend(decisions)
                 write_json(directory / "normalized.json", record["results"])
@@ -164,6 +175,10 @@ class Runner:
                     record["status"] = "REJECTED_PERFORMANCE" if stage == "benchmark" else "REJECTED_VALIDATION"
                     break
             else:
+                if milestones.enabled(self.config):
+                    record["milestones"] = milestones.report(record["results"], self.config["validation"])
+                    record["milestones_completed"] = next((i for i, row in enumerate(record["milestones"]) if not row["passed"]), len(record["milestones"]))
+                    record["final_performance_passed"] = all(g["pass"] for g in validation.gates(record["results"], self.config["validation"], "benchmark", phase="final"))
                 decisions = validation.gates(record["results"], self.config["validation"], phase=phase)
                 record["gates"] = decisions
                 if all(gate["pass"] for gate in decisions):
@@ -203,10 +218,17 @@ class Runner:
         better = best is None
         if best:
             delta = best["score"] - trial["score"] if direction == "min" else trial["score"] - best["score"]
-            better = delta > abs(best["score"]) * improvement
+            if milestones.enabled(self.config) and trial["milestones_completed"] != best.get("milestones_completed", 0):
+                better = trial["milestones_completed"] > best.get("milestones_completed", 0)
+            else:
+                better = delta > abs(best["score"]) * improvement
         if better:
             self.state["best"] = {"id": trial["id"], "directory": trial["directory"], "score": trial["score"],
                                   "parameters": trial["parameters"], "identity": trial["identity"]}
+            if trial.get("artifact"):
+                self.state["best"]["artifact"] = trial["artifact"]
+            if milestones.enabled(self.config):
+                self.state["best"].update({key: trial[key] for key in ("milestones_completed", "milestones", "final_performance_passed")})
             trial["status"] = "ACCEPTED"
             self.event("best_updated", trial=trial["id"], score=trial["score"])
         else:
@@ -314,11 +336,17 @@ class Runner:
             bundle.mkdir(exist_ok=True)
             write_json(bundle / "parameters.json", best["parameters"])
             patch_sha = source.export_patch(self.root / "source-base", self.root / best["directory"] / "source", bundle / "source.patch")
+            final_record = next((t for t in self.state['trials'] if t['id'] == self.state.get('final_trial')), None)
+            delivered = final_record if self.state['status'] == 'COMPLETED' and final_record else best
             write_json(bundle / "manifest.json", {"schema_version": 1, "mode": self.config["mode"], "status": self.state["status"],
                        "best": best, "final_trial": self.state.get("final_trial"), "contract_sha256": self.state["contract_sha256"],
-                       "source_patch_sha256": patch_sha, "note": "本地源码与配置交付包；真实镜像由 build adapter 产物提供。"})
+                       "source_patch_sha256": patch_sha, "runtime_artifact": delivered.get("artifact"), "note": "本地源码与配置交付包；真实镜像由 build adapter 产物提供。"})
             lines += [f"最佳已通过候选：`{best['id']}`，objective 为 `{best['score']}`。", "",
                       "`bundle/` 保存配置和相对基线的累积源码补丁。请保留完整运行目录以追溯证据。", ""]
+        if milestones.enabled(self.config) and best:
+            lines += ["## 阶段目标", "", "搜索 best 只表示当前最佳正确候选；最终性能与完整最终验收通过后才能完成交付。", ""]
+            lines += [f"- {row['name']}：{'PASS' if row['passed'] else 'NOT_MET'}" for row in best.get('milestones', [])]
+            lines += [""]
         if self.config["validation"].get("final_accuracy"):
             final = next((t for t in self.state["trials"] if t["id"] == self.state.get("final_trial")), None)
             results = (final or {}).get("results", {}).get("final_accuracy", {}).get("benchmarks", {})

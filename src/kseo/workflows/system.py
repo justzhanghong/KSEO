@@ -3,7 +3,7 @@
 import sys
 from pathlib import Path
 
-from .. import optimizer, source
+from .. import optimizer, source, milestones
 from ..util import canonical, file_digest, write_json
 from .pipeline import Pipeline
 
@@ -82,7 +82,8 @@ class SystemWorkflow:
                 reason = "DUPLICATE_PROPOSAL"
                 break
             trial = runner.trial(proposal["parameters"], "candidate", selected_base, proposal["patch"], proposal["hypothesis"],
-                                 kernel_evidence=proposal.get("kernel_evidence"), workflow=proposal if pipeline else None)
+                                 kernel_evidence=proposal.get("kernel_evidence"), workflow=proposal if pipeline else None,
+                                 equivalence=proposal.get('equivalence'))
             trial["proposal_sha256"] = fingerprint
             if pipeline:
                 trial["workflow_lane"] = proposal["workflow_lane"]
@@ -102,6 +103,8 @@ class SystemWorkflow:
             runner.state["status"] = "NO_VALID_CANDIDATE"
         elif runner.remaining() <= 0:
             runner.state["status"] = "BUDGET_EXHAUSTED_UNVALIDATED"
+        elif milestones.enabled(runner.config) and not best.get("final_performance_passed", False):
+            runner.state["status"] = "TARGETS_NOT_MET"
         elif runner.config.get("final_validation", True):
             final = runner.trial(best["parameters"], "final", runner.root / best["directory"] / "source", None, "独立重新运行最佳候选的完整合同")
             if runner.state["status"] == "CLEANUP_FAILED":

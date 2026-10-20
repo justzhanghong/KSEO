@@ -38,8 +38,12 @@ def normalize(profile: dict) -> dict:
             "estimate_note": "gpu_time 可能包含重叠和并行时间；Amdahl 估计只用于策略排序，不代表 E2E 收益。"}
 
 
-def route(profile: dict, configured: set[str], seen: set[str], revision: str, *, min_gain: float = 0) -> dict | None:
-    for hotspot in profile["hotspots"]:
+def route(profile: dict, configured: set[str], seen: set[str], revision: str, *, min_gain: float = 0, priority=None) -> dict | None:
+    rows = profile['hotspots']
+    if priority is not None:
+        by_id = {row['id']:row for row in rows}
+        rows = [by_id[identifier] for identifier in priority]
+    for hotspot in rows:
         lane = "kernel" if hotspot["kind"] == "kernel" else "scheduling"
         key = f"{revision}:{lane}:{hotspot['id']}"
         if lane not in configured or key in seen or hotspot["expected_saved_fraction"] <= min_gain:

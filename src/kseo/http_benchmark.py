@@ -45,7 +45,7 @@ def measure(request: dict, case_id: str, endpoint: str, *, api_key: str = "", ti
             generated = False
             for choice in item.get("choices", []):
                 delta = choice.get("delta", {})
-                if any(delta.get(key) for key in ("content", "reasoning_content", "reasoning", "tool_calls")):
+                if any(delta.get(key) for key in ("content", "reasoning_content", "reasoning")):
                     generated = True
             if generated:
                 last = time.perf_counter()
@@ -59,6 +59,7 @@ def measure(request: dict, case_id: str, endpoint: str, *, api_key: str = "", ti
         raise KSEOError("服务端未提供 cache read 证据；请启用对应 usage 字段")
     return {"request_id": request["request_id"], "case_id": case_id, "status": "completed",
             "input_tokens": usage.get("prompt_tokens"), "output_tokens": usage.get("completion_tokens"),
+            "output_token_basis": "reasoning_plus_final", "ttft_basis": "first_generated_reasoning_or_content_token",
             "cache_read_tokens": cached, "ttft_ms": (first - start) * 1000, "total_ms": (last - start) * 1000}
 
 

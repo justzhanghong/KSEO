@@ -15,10 +15,10 @@
 <path d="M540,318 L540,341" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
 <rect x="64" y="348" width="952" height="101" rx="12" fill="#e0f2fe" stroke="#94a3b8"/>
 <text x="90" y="383" font-size="23" font-weight="700" fill="#0f172a">L3 · 带条件的场景规则</text>
-<text x="90" y="421" font-size="18" fill="#334155">50 条规则：数学等价与最终精度为前提；其他规则按模型 / 能力匹配</text>
+<text x="90" y="421" font-size="18" fill="#334155">51 条规则：数学等价与最终精度为前提；其他规则按模型 / 能力匹配</text>
 <path d="M540,451 L540,474" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
 <rect x="64" y="481" width="952" height="101" rx="12" fill="#ecfdf5" stroke="#94a3b8"/>
 <text x="90" y="516" font-size="23" font-weight="700" fill="#0f172a">L4 · 历史案例与来源</text>
-<text x="90" y="554" font-size="18" fill="#334155">59 个案例 · 72 条来源记录：保留观察、原状态、SHA256 与未闭环项</text>
+<text x="90" y="554" font-size="18" fill="#334155">59 个案例 · 74 条来源记录：保留观察、原状态、SHA256 与未闭环项</text>
 <text x="540" y="636" text-anchor="middle" font-size="18" fill="#475569">全层保留证据边界 · 历史知识须在当前合同验证 · 本次未重跑 GPU</text>
 </g></svg>
