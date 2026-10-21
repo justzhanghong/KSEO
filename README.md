@@ -32,14 +32,14 @@ KSEO 参考 GEAK 的 System 与 Kernel 分层设计，组织端到端推理优�
   - 单轮对话场景阶段目标：72K输入256输出，1/2/3并发，TTFT/TPOT，30s/50ms、20s/50ms、15s/40ms、12s/40ms、10s/40ms、10s/30ms。
   - 多轮对话场景目标：开启KVOffloading，TTFT至少下降30%。
   - 最终部署目标：保证正确性的情况下优化推理速度、测试模型精度、完成模型服务API验证、稳定性验证、实现一键部署。
-  - 其余目标和约束使用KSEO模型要求。
+  - 其余目标和约束使用KSEO默认要求。
 - 硬件资源：
   - 可用的AIHub集群：655，单台八卡A800机器。
   - AIHub网址：http://192.168.11.18:30021/
   - AIHub使用文档：/nfs/AE/zhanghong/from_lixiao/aihub_docs.json
 - 权限信息：
   - AIHub用户token：/nfs/AE/zhanghong/workflow/vllm_d/aihub_token.md
-  - 本机用户密码：/nfs/AE/zhanghong/workflow/tmp_vllm_a//server_info.md，其中，Windows机器有访问外网的权限。
+  - 本机用户密码：/nfs/AE/zhanghong/workflow/tmp_vllm_a/server_info.md，其中，Windows机器有访问外网的权限。
   - 任务执行过程中所有中间结果保存到：/nfs/AE/zhanghong/workflow/tmp_vllm_a/glm53_flash_v1/
   - GitLab权限：本机用户zhanghong具有GitLab权限。
 ```
@@ -157,7 +157,9 @@ kseo validate ./runs/model-001/task.json \
 
 ## 经验转换
 
-经验按 **原则 → 方法 → 场景规则 → 案例与来源** 由粗到细组织：6 条原则、12 个方法、51 条规则、59 个案例，关联 74 条来源记录。原有 9 张代表性卡片和 V4.1 专项包均已纳入；本轮增加 GLM-5.1/5.2、V4-Flash 与 V4.1-Flash 的 20 条跨模型经验，覆盖生产 shape、峰值显存、CUDA Graph、最大瓶颈点、真实 P/D、MTP/Batch/KV 状态、API 与证据审查；新增 13 条最终精度经验及全模型规则 G-P02；G-P03 补充新模型自举与统一默认，具体目标仍由本次任务提供。
+经验按 **原则 → 方法 → 场景规则 → 案例与来源** 由粗到细组织：6 条原则、13 个方法、68 条规则、59 个案例，关联 97 条来源记录。原有模型、跨模型、最终精度与全模型默认规则保持；新增 RSI 方法库的 M13 实验总则和17个带条件优化方向，覆盖资源/存活区间、分块、索引/元数据/地址、转换/访存、冗余消除、GPU 流水线、机器码回归和条件性模型生命周期复用。这批新增内容是优化思路与实验方向，没有新增 GPU 实测案例或性能承诺。
+
+Agent 请求中的 `knowledge_hierarchy.optimization_methods` 提供完整方向导航，不挤占原有 top-k。按当前最大瓶颈点选择一两个有成本证据的动作，再下钻成立条件、最小改动、控制、预测与反证；不要求遍历所有方法。详见 [优化思路与方向](docs/optimization-methods.md)。
 
 **全模型规则 G-P01：速度优化必须数学等价，只允许浮点自身引入的微小数值差异。** 不要求 bitwise 一致；容差须在搜索前按 dtype、算子和 shape 冻结。数值接近或质量分数通过不能单独证明数学等价，历史经验不能豁免该前提。
 
@@ -169,6 +171,9 @@ kseo knowledge --node G-P01
 kseo knowledge --node K04
 kseo knowledge --node R15
 kseo knowledge --node case:R15
+kseo knowledge --node M13
+kseo knowledge --node RSI-15
+kseo knowledge --hierarchy --context examples/knowledge/kernel-method-context.json
 kseo knowledge --hierarchy --context examples/knowledge/glm52-pd-context.json --limit 24
 
 # 原有平面检索和模型 recipe 接口继续可用

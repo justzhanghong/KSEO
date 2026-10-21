@@ -7,11 +7,11 @@
 | 层级 | 内容 | 数量 | 证据边界 |
 | --- | --- | --- | --- |
 | L1 | 优化原则 | 6 | 跨案例概括，不构成任意模型上的收益证明 |
-| L2 | 诊断与优化方法 | 12 | 决定检查和实验步骤，尚需实际工具与证据 |
-| L3 | 带条件的场景规则 | 51 | 全模型数学等价/最终精度规则、V4.1 现行规则、跨模型与评测迁移规则 |
+| L2 | 诊断与优化方法 | 13 | 决定检查和实验步骤，尚需实际工具与证据 |
+| L3 | 带条件的场景规则 | 68 | 全模型规则、模型现行规则、跨模型/评测迁移及优化方向 |
 | L4 | 历史案例与来源 | 59 | 历史观察与本轮离线数据审计分别记录；均不代表本轮 GPU 实测 |
 
-关联 74 条来源记录，包括历史材料、用户规范和本轮静态数据身份审计。来源记录数不等于独立复现次数。原有 9 张代表性摘要卡未保存逐卡直接来源 hash，明确保留此缺口，不补造引用。
+关联 97 条来源记录，包括历史材料、用户规范、静态数据身份审计和 RSI 方法材料。来源记录数不等于独立复现次数。原有 9 张代表性摘要卡未保存逐卡直接来源 hash，明确保留此缺口，不补造引用。
 
 **通用前提 G-P01：速度优化必须数学等价。** 允许的差异限于浮点表示、舍入、等价运算重排或并行归约带来的微小误差，并满足搜索前冻结的容差。数学等价不要求 bitwise 一致；数值接近或质量分数通过也不能单独证明数学等价。该规则对所有模型和优化路径生效，不受 top-k 限制。
 
@@ -19,7 +19,7 @@
 
 ## 组织与证据边界
 
-本批材料抽查 GLM-5.1 NVFP4/FP8、GLM-5.2、V4-Flash 和 V4.1-Flash 的报告、故障分析及部分原始日志。整理前核对新增 23 份原文件的 SHA256；没有逐行审计全部历史日志，没有重跑 GPU，也没有新增真实单机或 P/D 部署 adapter。用户授权整理不提升原证据等级。
+既有材料抽查 GLM-5.1 NVFP4/FP8、GLM-5.2、V4-Flash 和 V4.1-Flash 的报告、故障分析及部分原始日志，跨模型整理核对了23份原文件。另对 RSI 方法库的23份方法/索引/参考文件核对 SHA256，新增 M13 与17个优化方向，没有新增实测案例。没有逐行审计全部历史日志，没有重跑 GPU，也没有新增真实单机或 P/D 部署 adapter。用户授权整理不提升原证据等级。
 
 | 证据类型 | 可以支持 | 不能直接支持 |
 | --- | --- | --- | --- |
@@ -27,6 +27,7 @@
 | 历史实测/正式报告 | 原版本、负载和合同内的观察结果 | 新模型收益、组合变化中单项收益 |
 | 原始日志片段 | 该片段内的形状、错误或事件 | 全量请求通过、唯一事故根因 |
 | 代码机制审阅 | 可达路径、状态不变量和危险条件 | 未重放请求的输出级因果闭环 |
+| 优化方法审阅 | 触发条件、最小动作、控制实验和反证思路 | 方法已执行、后端已支持或新模型收益 |
 | 本地/NFS 集成测试报告 | 该测试范围内的隔离或协议行为 | 真实 GPU 性能、长期稳定性 |
 | 假设/因果未闭环 | 排查方向和待补证项目 | 已证实根因、无需验证的修复 |
 
@@ -53,6 +54,8 @@ kseo knowledge --hierarchy --context examples/knowledge/glm52-pd-context.json --
 旧 `knowledge --context ...` 继续返回原有平面卡片；新分层接口覆盖本次跨模型规则。`--extra` 只用于旧接口，未审阅导入不会自动进入层级。
 
 外部 Agent 的 `knowledge_hierarchy` 始终带 6 条原则、全模型 G-P01/G-P02/G-P03 及所选方法、规则、匹配案例、祖先 ID 和来源。`--limit`/top-k 只截断迁移规则；匹配 V4.1 时，11 条模型现行规则完整保留，`model_recipe` 仍完整提供。当前合同和用户规则优先，旧参数、learned-experience 和历史案例不得覆盖；未知阈值仍待确认，不能自动 PASS。
+
+`knowledge_hierarchy.optimization_methods` 另带 M13 实验总则与17个方向导航，不挤占现有 top-k。先核对当前成本证据，再用 `kseo knowledge --node RSI-15` 等读取成立条件、控制与反证；明确的 `context.optimization_method` 可筛选完整方向。导航和选择标记都不代表适用或验收通过。详见 [优化思路与方向](optimization-methods.md)。
 
 ## 原则 → 方法 → 规则
 
@@ -106,6 +109,20 @@ kseo knowledge --hierarchy --context examples/knowledge/glm52-pd-context.json --
 所需证据：上界估算假设；重复测量与噪声；分支决策记录。
 
 场景规则：[R06](knowledge.md#r06) 先比较可实现收益上界、测量噪声和目标差距，再投入深度调优。
+
+<a id="m13"></a>
+#### M13 按成本证据选择单变量优化动作与反证实验
+
+1. 冻结真实调用边界、数学/数值合同、shape/stride/尾部、源码/镜像/编译与设备身份；先检查baseline自重复。
+2. 把成本证据、成立条件、唯一动作、控制版、可证伪预测和否决条件写清；不固定遍历全部方向。
+3. 编译相关改动核对实际同源产物与全kernel REG/SMEM/local、同步和动态工作；进程/模型复用按生命周期证据验收。
+4. 数值通过后同设备交错测未插桩完整调用，包含准备、查键、分配、同步和排空；Profiler只辅助归因。
+5. 遵守单shape model-forward warmup与跨shape、并发、缓存合同；单项有效后重测组合，不能相加历史百分比。
+6. micro收益必须回到TTFT/TPOT、质量、API、稳定性与最终新部署；未能隔离时只报告组合效果或证据不足。
+
+所需证据：成本与完整依赖证据；单变量/控制/预测/反证；数学等价与冻结oracle；实际产物或生命周期身份；原始数值和未插桩局部/E2E样本。
+
+场景规则：[RSI-01](knowledge.md#rsi-01) 缩短中间值存活区间、[RSI-02](knowledge.md#rsi-02) 选择状态存放位置、[RSI-03](knowledge.md#rsi-03) 分块与驻留联合调参、[RSI-04](knowledge.md#rsi-04) GPU线程角色分工与工作分配、[RSI-05](knowledge.md#rsi-05) 按完整依赖调整GPU发射顺序、[RSI-06](knowledge.md#rsi-06) 分段发布与分段消费、[RSI-07](knowledge.md#rsi-07) 预取窗口与环形缓冲优化、[RSI-08](knowledge.md#rsi-08) 索引表示与解码优化、[RSI-09](knowledge.md#rsi-09) 关联元数据缓存与复用、[RSI-10](knowledge.md#rsi-10) 地址计算外提与简化、[RSI-11](knowledge.md#rsi-11) 精确跳过恒等数据操作、[RSI-12](knowledge.md#rsi-12) 不变计算预计算与版本化缓存、[RSI-13](knowledge.md#rsi-13) 成组转换与直接打包、[RSI-14](knowledge.md#rsi-14) 向量访存与输出映射、[RSI-15](knowledge.md#rsi-15) 静态索引消除私有数组访存、[RSI-16](knowledge.md#rsi-16) 源表达与全Kernel机器码回归分析、[RSI-17](knowledge.md#rsi-17) 跨请求模型复用与按需驻留。
 
 <a id="k03"></a>
 ### K03 覆盖真实负载、执行阶段和资源边界
@@ -885,6 +902,417 @@ G-P01 是本轮明确补充的全模型前提。V4.1 原规则完整内容见模
 
 下钻案例：[case:R20](knowledge-cases.md#case-r20)、[V41-H12](knowledge-cases.md#v41-h12)。
 
+<a id="rsi-01"></a>
+### RSI-01 缩短中间值存活区间
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=shorten-live-ranges。
+
+类别：**需要当前任务验证的迁移规则**。只移动一个中间对象的生成或消费点，先保持存放位置、tile和计算次数不变。
+
+触发证据：临时值跨多个阶段存活，REG/local 或依赖等待可能限制热点。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-01)。
+
+
+来源：[rsi:S04](knowledge-cases.md#source-rsi-s04)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-02"></a>
+### RSI-02 选择状态存放位置
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=state-placement。
+
+类别：**需要当前任务验证的迁移规则**。只迁移一个对象，在寄存器、共享内存或合法重算之间比较，保持原累加与舍入规则。
+
+触发证据：某个累加器或中间状态占用限制性存储资源。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-02)。
+
+
+来源：[rsi:S05](knowledge-cases.md#source-rsi-s05)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-03"></a>
+### RSI-03 分块与驻留联合调参
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=tiling-residency。
+
+类别：**需要当前任务验证的迁移规则**。先固定tile只改线程映射，再固定映射只改一维tile，记录覆盖完整问题所需的CTA数。
+
+触发证据：tile或线程映射与复用、MMA效率、实际驻留发生冲突。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-03)。
+
+
+来源：[rsi:S06](knowledge-cases.md#source-rsi-s06)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-04"></a>
+### RSI-04 GPU线程角色分工与工作分配
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=role-partitioning。
+
+类别：**需要当前任务验证的迁移规则**。先固定总线程数，仅改变一对角色的工作分配；增减线程作为后续独立候选。
+
+触发证据：producer/consumer等GPU线程角色的计算、供数与等待分布不均。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-04)。
+
+- 专项边界：角色指GPU线程/warp分工；不能据此给TP/PP分配或Agent角色作性能结论。
+
+来源：[rsi:S07](knowledge-cases.md#source-rsi-s07)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-05"></a>
+### RSI-05 按完整依赖调整GPU发射顺序
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=readiness-aware-scheduling。
+
+类别：**需要当前任务验证的迁移规则**。保持角色、槽数和发布粒度，仅交换一处合法工作顺序，保留issued/completed/released状态。
+
+触发证据：已就绪消费者被另一项固定优先工作阻塞。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-05)。
+
+
+来源：[rsi:S08](knowledge-cases.md#source-rsi-s08)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-06"></a>
+### RSI-06 分段发布与分段消费
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=segmented-publication。
+
+类别：**需要当前任务验证的迁移规则**。仅将一次整块发布改为一种合法段长，先保持角色、槽数、线程映射和元素算术不变。
+
+触发证据：整块发布拖延了消费者，而消费者存在合法的分段输入边界。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-06)。
+
+
+来源：[rsi:S09](knowledge-cases.md#source-rsi-s09)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-07"></a>
+### RSI-07 预取窗口与环形缓冲优化
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=prefetch-ring-buffers。
+
+类别：**需要当前任务验证的迁移规则**。先固定深度只改距离，再固定距离只改深度，最后单独评估安全release点。
+
+触发证据：输入等待、预取距离、槽数或过晚释放处于关键路径。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-07)。
+
+
+来源：[rsi:S10](knowledge-cases.md#source-rsi-s10)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-08"></a>
+### RSI-08 索引表示与解码优化
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=index-encoding。
+
+类别：**需要当前任务验证的迁移规则**。先在相同位宽比较absolute与delta，再单独比较有范围证明的窄存储，保持有效序列与顺序。
+
+触发证据：稀疏索引的delta累计形成串行链，或索引存储可能过宽。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-08)。
+
+
+来源：[rsi:S11](knowledge-cases.md#source-rsi-s11)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-09"></a>
+### RSI-09 关联元数据缓存与复用
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=metadata-cache。
+
+类别：**需要当前任务验证的迁移规则**。先缓存一个小窗口的关联项，保持payload布局、索引编码和遍历顺序不变。
+
+触发证据：多个GPU角色重复读取相同一代的ID、scale或descriptor。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-09)。
+
+
+来源：[rsi:S12](knowledge-cases.md#source-rsi-s12)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-10"></a>
+### RSI-10 地址计算外提与简化
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=address-hoisting。
+
+类别：**需要当前任务验证的迁移规则**。仅外提一个不变基址；位宽缩小另列候选，保留宽指针高位和合法符号扩展。
+
+触发证据：热循环反复计算batch/head等不变量地址部分。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-10)。
+
+
+来源：[rsi:S13](knowledge-cases.md#source-rsi-s13)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-11"></a>
+### RSI-11 精确跳过恒等数据操作
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=exact-noop-elimination。
+
+类别：**需要当前任务验证的迁移规则**。仅在充分条件成立时跳过数据更新，保留必要acquire/release/fence/通知和正确事务计数。
+
+触发证据：热点中存在可廉价且充分证明的恒等更新。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-11)。
+
+
+来源：[rsi:S14](knowledge-cases.md#source-rsi-s14)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-12"></a>
+### RSI-12 不变计算预计算与版本化缓存
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=invariant-precomputation。
+
+类别：**需要当前任务验证的迁移规则**。只缓存一个确实不变的子表达式，按一致快照生成，真实写入完成后发布并保留旧读者代次。
+
+触发证据：相同依赖版本下重复进行确定性准备或子表达式计算。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-12)。
+
+
+来源：[rsi:S15](knowledge-cases.md#source-rsi-s15)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-13"></a>
+### RSI-13 成组转换与直接打包
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=paired-conversion-packing。
+
+类别：**需要当前任务验证的迁移规则**。用两个不同元素匹配合法成组转换并形成正确位序，先保持原store和线程映射。
+
+触发证据：转换重复输入同一值，随后需要多余掩码或字节置换。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-13)。
+
+
+来源：[rsi:S16](knowledge-cases.md#source-rsi-s16)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-14"></a>
+### RSI-14 向量访存与输出映射
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=vector-memory-access。
+
+类别：**需要当前任务验证的迁移规则**。先只改load或store之一，合法主体使用宽访问，尾部保留安全短向量/标量路径。
+
+触发证据：连续数据使用细粒度load/store，地址与请求成本可见。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-14)。
+
+
+来源：[rsi:S17](knowledge-cases.md#source-rsi-s17)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-15"></a>
+### RSI-15 静态索引消除私有数组访存
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=static-indexing。
+
+类别：**需要当前任务验证的迁移规则**。仅对一个小对象改用编译期索引展开，保持访问顺序、表达式、舍入与输出宽度。
+
+触发证据：小型线程私有数组经runtime固定遍历产生LDL/STL。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-15)。
+
+
+来源：[rsi:S18](knowledge-cases.md#source-rsi-s18)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-16"></a>
+### RSI-16 源表达与全Kernel机器码回归分析
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=codegen-regressions。
+
+类别：**需要当前任务验证的迁移规则**。一次只换一种同语义表达或编译原语，检查整个kernel的控制流、同步、资源和冷热角色。
+
+触发证据：局部表达更短但其他路径变化，或两个单项优化组合退化。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-16)。
+
+
+来源：[rsi:S19](knowledge-cases.md#source-rsi-s19)、[rsi:S21](knowledge-cases.md#source-rsi-s21)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
+<a id="rsi-17"></a>
+### RSI-17 跨请求模型复用与按需驻留
+
+上层方法：[M13](knowledge.md#m13)。
+
+适用条件：optimization_method=model-lifecycle-cache。
+
+类别：**需要当前任务验证的迁移规则**。只延长一个资源生命周期，按证据选仅复用worker、GPU常驻或CPU模型池，不预设搬运方案。
+
+触发证据：重复正式请求实际包含worker启动、模型构建或权重重读。
+
+完整动作、控制与反证：[实验方法](optimization-methods.md#rsi-17)。
+
+- 专项边界：通常常驻的vLLM服务不应无证据增加CPU模型池；这不等于KVOffloading。
+- 专项边界：来源的RTX5090三类任务复用同一Qwen CPU模型池，是组合历史结果及小样本；不能推出跨模型收益，原始summary未在KSEO重跑。
+
+来源：[rsi:S20](knowledge-cases.md#source-rsi-s20)、[rsi:S21](knowledge-cases.md#source-rsi-s21)、[rsi:S22](knowledge-cases.md#source-rsi-s22)、[rsi:S23](knowledge-cases.md#source-rsi-s23)。
+
+证据基础：USER_AUTHORIZED_REVIEW_OF_PEER_METHODS。
+
+- 边界：方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。
+- 边界：遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。
+- 边界：按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。
+
+下钻案例：规则声明；无独立经验案例。
+
 <a id="v41-p01"></a>
 ### V41-P01 正式速度开启 Prefix Cache，首 token 隔离并实证零命中
 
@@ -1178,7 +1606,7 @@ G-P01 是本轮明确补充的全模型前提。V4.1 原规则完整内容见模
 
 ## 数据与维护
 
-主体是 `src/kseo/data/knowledge-hierarchy.json`，最终精度经验位于 `experience-final-accuracy.json`；现有规则/卡片通过 `legacy_links` 引用原始 recipe。层级加载检查 ID、连续层级、引用闭合与证据边界；来源使用 `cross:`/`v41:`/`accuracy:` 命名空间。
+主体是 `src/kseo/data/knowledge-hierarchy.json`，最终精度经验位于 `experience-final-accuracy.json`，RSI 优化方向位于 `optimization-methods-rsi.json`；现有规则/卡片通过 `legacy_links` 引用原始 recipe。层级加载检查 ID、连续层级、引用闭合与证据边界；新增方法来源使用 `rsi:` 命名空间，原有来源和状态保留。
 
 公开来源只保留相对实验路径或文件名、行号（本批来源）、SHA256 和审阅范围。原文件未随仓库公开，无法只靠 hash 在公开环境复算历史结果。证据不足项必须补齐后另建结论，不能回写历史失败为通过。
 

@@ -1606,6 +1606,167 @@
 - SHA256：`fd9c1c7d5881bfeba2da21c3ef72418d74847bdbf22f01019e98ed05d8dae72f`。
 - 审阅范围：模型和具体任务数值是每次输入，不固化示例的模型、资源或阈值。
 
+<a id="source-rsi-s01"></a>
+### rsi:S01
+
+- 位置：`RSI/skills/README.md`，第 1 行；锚点：可复用 GPU 算子与推理优化技能。
+- SHA256：`c7186a6b627fd7f4711196891ad100f3a714eceabb1fe7c7c1593715ff6929f6`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s02"></a>
+### rsi:S02
+
+- 位置：`RSI/skills/catalog.json`，第 1 行；锚点：catalog.json。
+- SHA256：`f76af31aebc2381e3aed5f2e85a62ac8be9fb544c13708d76a9a88ecefacddd6`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s03"></a>
+### rsi:S03
+
+- 位置：`RSI/skills/operator-optimization/SKILL.md`，第 6 行；锚点：GPU 算子与推理优化入口。
+- SHA256：`ae84e18ca3bd989b7cbb794b9e5ca6f7f0c8cc30fd42a528f9fdad3efdd71c2d`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s04"></a>
+### rsi:S04
+
+- 位置：`RSI/skills/shorten-live-ranges/SKILL.md`，第 6 行；锚点：缩短中间值存活区间。
+- SHA256：`312dee4f321324b190f0a6582ba64f30f92d953c70c4345921123c49495cd230`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s05"></a>
+### rsi:S05
+
+- 位置：`RSI/skills/state-placement/SKILL.md`，第 6 行；锚点：选择状态存放位置。
+- SHA256：`afa5a0d43bc756c4b3070e30f02759126b4fc2a65b293504bb0e0aa8f3d75d70`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s06"></a>
+### rsi:S06
+
+- 位置：`RSI/skills/tiling-residency/SKILL.md`，第 6 行；锚点：分块与驻留联合调参。
+- SHA256：`23feaa2f99b1f13f5b9b59be103fdab9d6afcf35fb21c8b89c96f2adb7d8b448`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s07"></a>
+### rsi:S07
+
+- 位置：`RSI/skills/role-partitioning/SKILL.md`，第 6 行；锚点：角色分工与工作分配。
+- SHA256：`57da450b585662f6a98ef20c69071d250fc893c25969cda53b39f51f87953a08`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s08"></a>
+### rsi:S08
+
+- 位置：`RSI/skills/readiness-aware-scheduling/SKILL.md`，第 6 行；锚点：根据完整依赖调整发射顺序。
+- SHA256：`f87b12905515bc9a411bd9e146328663955a77328ddb32fe02fafbd1f98744f9`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s09"></a>
+### rsi:S09
+
+- 位置：`RSI/skills/segmented-publication/SKILL.md`，第 6 行；锚点：分段发布与分段消费。
+- SHA256：`659af15bf0d4a038291a5e1045090d54706082f535c7b78b6d7cd041025676f2`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s10"></a>
+### rsi:S10
+
+- 位置：`RSI/skills/prefetch-ring-buffers/SKILL.md`，第 6 行；锚点：预取窗口与环形缓冲优化。
+- SHA256：`fd882ff53b3c87db1084b01bd370f1d94b10dc854cda129a9d65ca045a382548`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s11"></a>
+### rsi:S11
+
+- 位置：`RSI/skills/index-encoding/SKILL.md`，第 6 行；锚点：索引表示与解码优化。
+- SHA256：`a892ef0e5729e34c4e2bf6e30b4471043bffb0126c25339dd4785d91544ae928`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s12"></a>
+### rsi:S12
+
+- 位置：`RSI/skills/metadata-cache/SKILL.md`，第 6 行；锚点：关联元数据缓存与复用。
+- SHA256：`1083ab87a106bccbc4c947a9db31e9041e7f0a76ea0534a80f30b77fdad7351e`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s13"></a>
+### rsi:S13
+
+- 位置：`RSI/skills/address-hoisting/SKILL.md`，第 6 行；锚点：地址计算外提与简化。
+- SHA256：`9852828fa16c8b16182cd17ef55ffbfce7f23a473e02e389713940bd244e9013`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s14"></a>
+### rsi:S14
+
+- 位置：`RSI/skills/exact-noop-elimination/SKILL.md`，第 6 行；锚点：精确冗余消除。
+- SHA256：`ad20f4eddce94eddb0c79214f09ddf189aa725d7718b3727c88a816592458fea`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s15"></a>
+### rsi:S15
+
+- 位置：`RSI/skills/invariant-precomputation/SKILL.md`，第 6 行；锚点：不变计算预计算与缓存。
+- SHA256：`9fbbd018e1e9db85eeaa40f972d4d2aa9d2944e67751b3a5bcdec24081df81f4`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s16"></a>
+### rsi:S16
+
+- 位置：`RSI/skills/paired-conversion-packing/SKILL.md`，第 6 行；锚点：成组转换与直接打包。
+- SHA256：`862781337800a7cd78e26c1b25b1546c97375b971b5408dd8b980db48a7b2849`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s17"></a>
+### rsi:S17
+
+- 位置：`RSI/skills/vector-memory-access/SKILL.md`，第 6 行；锚点：向量访存与输出映射。
+- SHA256：`c180e7cf99d1efa04d0f01849dfa687ce58cf3b5952f28464ad0d0d454f41043`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s18"></a>
+### rsi:S18
+
+- 位置：`RSI/skills/static-indexing/SKILL.md`，第 6 行；锚点：静态索引消除私有数组访存。
+- SHA256：`62d9f8b4eb02c2d6108b893f12cb9ab133a4d975632f72c50b74930db29dba59`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s19"></a>
+### rsi:S19
+
+- 位置：`RSI/skills/codegen-regressions/SKILL.md`，第 6 行；锚点：源表达与机器码回归分析。
+- SHA256：`014c48c8fc2d8f81773397136e151e02f39152656e31b5b41b9eec0af73ed571`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s20"></a>
+### rsi:S20
+
+- 位置：`RSI/skills/model-lifecycle-cache/SKILL.md`，第 6 行；锚点：跨请求模型复用与按需显存驻留。
+- SHA256：`67d9e54ec4c466e3d3aaf3def73f33b08d190d9e8a735a5272a0a5b796c739b3`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s21"></a>
+### rsi:S21
+
+- 位置：`RSI/skills/references/backend-notes.md`，第 1 行；锚点：后端适配：以 CUDA / Blackwell 为具体例子。
+- SHA256：`acb63e199d2b0981be82d895bd86041b5ebe1592ddc9051f0d50d7280d49d568`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s22"></a>
+### rsi:S22
+
+- 位置：`RSI/skills/model-lifecycle-cache/references/applicability-checks.md`，第 1 行；锚点：模型生命周期方法的适用性检查。
+- SHA256：`6706838a1af2139c476ea0e7162eb5b68d2d44317a391680673dc6a4453dc7d6`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
+<a id="source-rsi-s23"></a>
+### rsi:S23
+
+- 位置：`RSI/skills/model-lifecycle-cache/references/sol-h3-rtx5090.md`，第 1 行；锚点：Sol-H3 RTX 5090 生命周期优化案例。
+- SHA256：`f2254c46daa06ca6f3b2c0985454c1a135c9730a29dc9af48f4917e93247b9f7`。
+- 审阅范围：优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。
+
 <a id="source-v41-s01"></a>
 ### v41:S01
 

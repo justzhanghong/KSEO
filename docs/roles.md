@@ -13,6 +13,8 @@ KSEO 用三个职责角色和一个 System 调度器组织闭环。角色不限�
 
 Configuration 先进行有预算上限的配置搜索。后续根据最大瓶颈点及可验证的收益选择 Scheduling 或 Kernel。每轮只检验一个假设；实际收益由 E2E 请求测量决定，Amdahl 仅作为排序估计。
 
+开发请求的 `knowledge_hierarchy.optimization_methods` 提供 M13 总则及17个方向导航。先由当前成本证据选择方向，再下钻条件、唯一动作、控制与反证；目录不会自动安装外部 skill，也不证明后端已支持。GPU 内线程/CTA 流水线仍进入 Kernel 的独立验证；host 调度或模型生命周期按实际边界进入 Scheduling。详见 [优化思路与方向](optimization-methods.md)。
+
 ## 已接入的协议
 
 执行 `kseo roles` 查看机器可读的输入、输出和权限约定。pipeline 可以配置可选分析员：

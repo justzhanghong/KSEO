@@ -1,0 +1,1227 @@
+{
+  "schema_version": 1,
+  "id": "rsi-reviewed-optimization-directions",
+  "revision": "2026-10-21.1",
+  "gpu_runs": 0,
+  "source_policy": "仅归纳已审阅的优化思路与方向，不分发同事原始skill、不声明新实测收益。",
+  "navigation_instructions": "目录仅供发现；先按当前Profile检查触发证据，再用knowledge --node <id>下钻成立条件、控制和反证。每轮选一两个动作，不全遍历；显式optimization_method标记不代表已验证适用。",
+  "global_boundary": [
+    "RSI方法目录只给优化思路和条件；其存在不表示已安装外部skill、后端支持或已取得收益。"
+  ],
+  "nodes": [
+    {
+      "id": "M13",
+      "level": 2,
+      "parent_id": "K02",
+      "title": "按成本证据选择单变量优化动作与反证实验",
+      "kind": "method",
+      "status": "REVIEWED_GUIDANCE_NOT_MEASURED",
+      "applies_to": {},
+      "requires_capabilities": [],
+      "summary": "先定位最大瓶颈和成本机制，再选一两个满足前提的动作；用控制、资源/依赖证据和完整调用反证，单项成立后才组合。",
+      "procedure": [
+        "冻结真实调用边界、数学/数值合同、shape/stride/尾部、源码/镜像/编译与设备身份；先检查baseline自重复。",
+        "把成本证据、成立条件、唯一动作、控制版、可证伪预测和否决条件写清；不固定遍历全部方向。",
+        "编译相关改动核对实际同源产物与全kernel REG/SMEM/local、同步和动态工作；进程/模型复用按生命周期证据验收。",
+        "数值通过后同设备交错测未插桩完整调用，包含准备、查键、分配、同步和排空；Profiler只辅助归因。",
+        "遵守单shape model-forward warmup与跨shape、并发、缓存合同；单项有效后重测组合，不能相加历史百分比。",
+        "micro收益必须回到TTFT/TPOT、质量、API、稳定性与最终新部署；未能隔离时只报告组合效果或证据不足。"
+      ],
+      "required_evidence": [
+        "成本与完整依赖证据",
+        "单变量/控制/预测/反证",
+        "数学等价与冻结oracle",
+        "实际产物或生命周期身份",
+        "原始数值和未插桩局部/E2E样本"
+      ],
+      "source_ids": [
+        "rsi:S01",
+        "rsi:S02",
+        "rsi:S03",
+        "rsi:S04",
+        "rsi:S05",
+        "rsi:S06",
+        "rsi:S07",
+        "rsi:S08",
+        "rsi:S09",
+        "rsi:S10",
+        "rsi:S11",
+        "rsi:S12",
+        "rsi:S13",
+        "rsi:S14",
+        "rsi:S15",
+        "rsi:S16",
+        "rsi:S17",
+        "rsi:S18",
+        "rsi:S19",
+        "rsi:S20",
+        "rsi:S21",
+        "rsi:S22",
+        "rsi:S23"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "从RSI方法库归纳的实验思路；不新增真实模型优化结果。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-01",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "缩短中间值存活区间",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "shorten-live-ranges"
+      },
+      "requires_capabilities": [],
+      "method_id": "shorten-live-ranges",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "临时值跨多个阶段存活，REG/local 或依赖等待可能限制热点。",
+      "summary": "只移动一个中间对象的生成或消费点，先保持存放位置、tile和计算次数不变。",
+      "preconditions": [
+        "生成可合法延后或最终消费可提前，且不改变输入版本、算术和副作用。"
+      ],
+      "minimum_change": "只移动一个中间对象的生成或消费点，先保持存放位置、tile和计算次数不变。",
+      "controls": [
+        "原版与仅移动版；若增加重算，再用保持同样重算但原寿命的版本隔离成本。"
+      ],
+      "predictions": [
+        "目标工作集/存活区间下降，并在实际资源或关键路径上体现。"
+      ],
+      "reject_if": [
+        "新增重算、延长其他值寿命、REG分配未变或完整调用没有净收益。"
+      ],
+      "validation": [
+        "同源资源报告与SASS、目标对象读写/版本、完整输出与未插桩计时。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S04",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-02",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "选择状态存放位置",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "state-placement"
+      },
+      "requires_capabilities": [],
+      "method_id": "state-placement",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "某个累加器或中间状态占用限制性存储资源。",
+      "summary": "只迁移一个对象，在寄存器、共享内存或合法重算之间比较，保持原累加与舍入规则。",
+      "preconditions": [
+        "目标设备支持候选存储和访问方式；已明确所有读者、精度、布局与完成语义。"
+      ],
+      "minimum_change": "只迁移一个对象，在寄存器、共享内存或合法重算之间比较，保持原累加与舍入规则。",
+      "controls": [
+        "原版与迁移版；有必要时仅预留同等存储作容量控制，并披露真实分配变化。"
+      ],
+      "predictions": [
+        "原限制资源下降，额外搬运和同步能被实际重叠或摊销。"
+      ],
+      "reject_if": [
+        "二次staging、布局转换、同步或另一资源限制抵消收益；读者未结束就回收。"
+      ],
+      "validation": [
+        "完整搬运路径、REG/SMEM预算、同步/别名检查、数值与完整调用耗时。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S05",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-03",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "分块与驻留联合调参",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "tiling-residency"
+      },
+      "requires_capabilities": [],
+      "method_id": "tiling-residency",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "tile或线程映射与复用、MMA效率、实际驻留发生冲突。",
+      "summary": "先固定tile只改线程映射，再固定映射只改一维tile，记录覆盖完整问题所需的CTA数。",
+      "preconditions": [
+        "已冻结完整问题和真实shape分布；区分独立输出分片与需要合并的部分归约。"
+      ],
+      "minimum_change": "先固定tile只改线程映射，再固定映射只改一维tile，记录覆盖完整问题所需的CTA数。",
+      "controls": [
+        "原版和各单变量版；归约变化时另保留同分片、原合并顺序的控制。"
+      ],
+      "predictions": [
+        "资源跨过实际限制阈值，或相同驻留下有更多可发射工作隐藏等待。"
+      ],
+      "reject_if": [
+        "重复读取/合并增加、矩阵指令效率降低、网格不足、新spill或完整负载无收益。"
+      ],
+      "validation": [
+        "真实launch及编译资源、分配取整、动态驻留/eligible工作、完整输出和调用计时。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S06",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-04",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "GPU线程角色分工与工作分配",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "role-partitioning"
+      },
+      "requires_capabilities": [],
+      "method_id": "role-partitioning",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "producer/consumer等GPU线程角色的计算、供数与等待分布不均。",
+      "summary": "先固定总线程数，仅改变一对角色的工作分配；增减线程作为后续独立候选。",
+      "preconditions": [
+        "明确每个角色的输入输出、集体参与范围、依赖和恰好一次处理要求。"
+      ],
+      "minimum_change": "先固定总线程数，仅改变一对角色的工作分配；增减线程作为后续独立候选。",
+      "controls": [
+        "原版、分工版及保持同映射与必要握手的控制；不同时删除barrier。"
+      ],
+      "predictions": [
+        "关键消费者更早完成，完整kernel成本降低，而非单个角色更快。"
+      ],
+      "reject_if": [
+        "新增同步、串行化、REG/SMEM跨阈值、漏工作、重复工作或死锁。"
+      ],
+      "validation": [
+        "各角色工作/等待、真实资源、参与人数、空/尾/不等长路径与完整结果。"
+      ],
+      "limits": [
+        "角色指GPU线程/warp分工；不能据此给TP/PP分配或Agent角色作性能结论。"
+      ],
+      "source_ids": [
+        "rsi:S07",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-05",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "按完整依赖调整GPU发射顺序",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "readiness-aware-scheduling"
+      },
+      "requires_capabilities": [],
+      "method_id": "readiness-aware-scheduling",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "已就绪消费者被另一项固定优先工作阻塞。",
+      "summary": "保持角色、槽数和发布粒度，仅交换一处合法工作顺序，保留issued/completed/released状态。",
+      "preconditions": [
+        "全部输入、旧输出与目标缓冲均安全；确认query是否只读以及acquire的实际副作用。"
+      ],
+      "minimum_change": "保持角色、槽数和发布粒度，仅交换一处合法工作顺序，保留issued/completed/released状态。",
+      "controls": [
+        "原版、相同查询但保持原序、允许改序三版，隔离查询开销与改序收益。"
+      ],
+      "predictions": [
+        "关键消费者真正提前完成，完整依赖链缩短。"
+      ],
+      "reject_if": [
+        "等待只转移、预取被推迟、查询成本抵消、重复发射/释放或phase错代。"
+      ],
+      "validation": [
+        "真实同步API语义、完整依赖、冷热/尾/排空/回绕检查与未插桩计时。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S08",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-06",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "分段发布与分段消费",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "segmented-publication"
+      },
+      "requires_capabilities": [],
+      "method_id": "segmented-publication",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "整块发布拖延了消费者，而消费者存在合法的分段输入边界。",
+      "summary": "仅将一次整块发布改为一种合法段长，先保持角色、槽数、线程映射和元素算术不变。",
+      "preconditions": [
+        "最小消费粒度与布局已知；必要全局统计已经完成，每段所有权和可见性可证明。"
+      ],
+      "minimum_change": "仅将一次整块发布改为一种合法段长，先保持角色、槽数、线程映射和元素算术不变。",
+      "controls": [
+        "整块原版、分段通知但整块消费、真正分段消费三版。"
+      ],
+      "predictions": [
+        "首个可消费片段和整个算子的完成时间都提前。"
+      ],
+      "reject_if": [
+        "消费者仍需整块、额外通知/重复读取抵消；全局统计未完成或仍有读者就复用。"
+      ],
+      "validation": [
+        "逐段有效范围、恰好一次消费、事务计数/fence、尾段及完整调用计时。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S09",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-07",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "预取窗口与环形缓冲优化",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "prefetch-ring-buffers"
+      },
+      "requires_capabilities": [],
+      "method_id": "prefetch-ring-buffers",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "输入等待、预取距离、槽数或过晚释放处于关键路径。",
+      "summary": "先固定深度只改距离，再固定距离只改深度，最后单独评估安全release点。",
+      "preconditions": [
+        "每代槽的所有读者、index/phase、真实异步完成和安全复用点明确。"
+      ],
+      "minimum_change": "先固定深度只改距离，再固定距离只改深度，最后单独评估安全release点。",
+      "controls": [
+        "原版与每个单变量版；增加查询时保留查询不改变调度的控制。"
+      ],
+      "predictions": [
+        "实际输入更早就绪，首轮、稳态和排空合计成本下降。"
+      ],
+      "reject_if": [
+        "缓冲变多降低驻留、等待迁移、缓存竞争、槽耗尽或issue后过早释放。"
+      ],
+      "validation": [
+        "槽容量/资源、发射/完成/释放事件、短于槽数/多次回绕/非对称消费者及完整计时。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S10",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-08",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "索引表示与解码优化",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "index-encoding"
+      },
+      "requires_capabilities": [],
+      "method_id": "index-encoding",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "稀疏索引的delta累计形成串行链，或索引存储可能过宽。",
+      "summary": "先在相同位宽比较absolute与delta，再单独比较有范围证明的窄存储，保持有效序列与顺序。",
+      "preconditions": [
+        "已知绝对值、delta、sentinel、重复项、负值和累计/乘法中间值范围。"
+      ],
+      "minimum_change": "先在相同位宽比较absolute与delta，再单独比较有范围证明的窄存储，保持有效序列与顺序。",
+      "controls": [
+        "原版、仅表示变化、仅合法窄存储；准备与上传成本分别计入。"
+      ],
+      "predictions": [
+        "累计依赖或元数据字节减少，完整调用仍有净收益。"
+      ],
+      "reject_if": [
+        "截断/溢出、保留码冲突、重复或顺序改变，或格式转换/准备成本抵消。"
+      ],
+      "validation": [
+        "逐项解码序列、范围端点/空尾/sentinel检查、动态访存与完整调用计时。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S11",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-09",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "关联元数据缓存与复用",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "metadata-cache"
+      },
+      "requires_capabilities": [],
+      "method_id": "metadata-cache",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "多个GPU角色重复读取相同一代的ID、scale或descriptor。",
+      "summary": "先缓存一个小窗口的关联项，保持payload布局、索引编码和遍历顺序不变。",
+      "preconditions": [
+        "完整版本快照一致，明确所有消费者、缓存发布与旧读者完成后的失效/回收。"
+      ],
+      "minimum_change": "先缓存一个小窗口的关联项，保持payload布局、索引编码和遍历顺序不变。",
+      "controls": [
+        "无缓存、同窗口单项、配对和整表缓存；窗口长度单独调参。"
+      ],
+      "predictions": [
+        "重复读取/地址等待减少，同时准备、同步和资源成本可接受。"
+      ],
+      "reject_if": [
+        "仅ID相同却scale已变、快照不一致、提前覆写，或共享内存增长降低驻留。"
+      ],
+      "validation": [
+        "ID/scale对应、仅scale变化/并发读者/回绕、真实请求/字节与完整净成本。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S12",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-10",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "地址计算外提与简化",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "address-hoisting"
+      },
+      "requires_capabilities": [],
+      "method_id": "address-hoisting",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "热循环反复计算batch/head等不变量地址部分。",
+      "summary": "仅外提一个不变基址；位宽缩小另列候选，保留宽指针高位和合法符号扩展。",
+      "preconditions": [
+        "编译器尚未完成同样外提；已证明地址范围、符号扩展、stride和中间乘法合法。"
+      ],
+      "minimum_change": "仅外提一个不变基址；位宽缩小另列候选，保留宽指针高位和合法符号扩展。",
+      "controls": [
+        "原版、仅外提、仅合法位宽改写；单项有效后再比较组合。"
+      ],
+      "predictions": [
+        "热循环地址指令或串行依赖减少，完整资源和耗时不恶化。"
+      ],
+      "reject_if": [
+        "指针截断、地址错位、外提值延长寿命跨过资源阈值或编译器原已优化。"
+      ],
+      "validation": [
+        "逐项地址、batch/head/stride/边界范围、同源SASS及完整数值/计时。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S13",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-11",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "精确跳过恒等数据操作",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "exact-noop-elimination"
+      },
+      "requires_capabilities": [],
+      "method_id": "exact-noop-elimination",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "热点中存在可廉价且充分证明的恒等更新。",
+      "summary": "仅在充分条件成立时跳过数据更新，保留必要acquire/release/fence/通知和正确事务计数。",
+      "preconditions": [
+        "证明实际数据路径、输入域、signed zero/非有限值和副作用；集体参与条件一致。"
+      ],
+      "minimum_change": "仅在充分条件成立时跳过数据更新，保留必要acquire/release/fence/通知和正确事务计数。",
+      "controls": [
+        "原版、相同判断但仍执行、精确跳过三版。"
+      ],
+      "predictions": [
+        "合法命中分布下省去工作的成本超过判断/汇合，且确实改善关键路径。"
+      ],
+      "reject_if": [
+        "把近似等于恒等值当精确条件、忽略特殊值、漏通知或成本被并行工作完全隐藏。"
+      ],
+      "validation": [
+        "等价性与输入域、边界/混合参与/交替路径、实际跳过产物和完整净成本。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S14",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-12",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "不变计算预计算与版本化缓存",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "invariant-precomputation"
+      },
+      "requires_capabilities": [],
+      "method_id": "invariant-precomputation",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "相同依赖版本下重复进行确定性准备或子表达式计算。",
+      "summary": "只缓存一个确实不变的子表达式，按一致快照生成，真实写入完成后发布并保留旧读者代次。",
+      "preconditions": [
+        "完整依赖含内容、权重、scale、shape/stride、配置与实现；RNG和副作用不因缓存改变。"
+      ],
+      "minimum_change": "只缓存一个确实不变的子表达式，按一致快照生成，真实写入完成后发布并保留旧读者代次。",
+      "controls": [
+        "原版、相同查键但重算、缓存三版；分别测首次、命中、失效及实际复用期。"
+      ],
+      "predictions": [
+        "包含准备、查键、驻留和失效后，实际有效复用期内的总成本更低。"
+      ],
+      "reject_if": [
+        "缓存当前输入相关输出、shape相同但内容已变、RNG消费改变、过期或发布竞争。"
+      ],
+      "validation": [
+        "完整依赖键/代次、并发与stream事件、失效/回退、容量和完整调用计时。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S15",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-13",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "成组转换与直接打包",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "paired-conversion-packing"
+      },
+      "requires_capabilities": [],
+      "method_id": "paired-conversion-packing",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "转换重复输入同一值，随后需要多余掩码或字节置换。",
+      "summary": "用两个不同元素匹配合法成组转换并形成正确位序，先保持原store和线程映射。",
+      "preconditions": [
+        "目标架构支持相应转换；逐元素scale、舍入点、饱和/非有限值语义及消费位序已知。"
+      ],
+      "minimum_change": "用两个不同元素匹配合法成组转换并形成正确位序，先保持原store和线程映射。",
+      "controls": [
+        "原版、仅成组转换、成组后显式恢复原排列的控制。"
+      ],
+      "predictions": [
+        "转换/掩码/置换动态工作减少，没有REG/local或其他发射路径回退。"
+      ],
+      "reject_if": [
+        "scale跟错元素、位序错误、提前舍入、换量化格式或硬件不支持原生路径。"
+      ],
+      "validation": [
+        "互异值与scale、舍入中点/特殊值/尾部、实际指令及完整输出/计时。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S16",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-14",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "向量访存与输出映射",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "vector-memory-access"
+      },
+      "requires_capabilities": [],
+      "method_id": "vector-memory-access",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "连续数据使用细粒度load/store，地址与请求成本可见。",
+      "summary": "先只改load或store之一，合法主体使用宽访问，尾部保留安全短向量/标量路径。",
+      "preconditions": [
+        "逐项证明连续性、首址和stride对齐、整个向量有效、所有权及语言别名规则。"
+      ],
+      "minimum_change": "先只改load或store之一，合法主体使用宽访问，尾部保留安全短向量/标量路径。",
+      "controls": [
+        "原版与合法宽访问版；需要映射重排时另列候选并计入shuffle/同步。"
+      ],
+      "predictions": [
+        "目标宽指令和动态请求/地址成本下降，完整算子有净收益。"
+      ],
+      "reject_if": [
+        "先越界读取再mask、覆盖padding或相邻行、同步/可见性语义改变，或布局成本抵消。"
+      ],
+      "validation": [
+        "stride/偏移各余数、短尾/哨兵、真实请求/sectors/DRAM字节与完整计时。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S17",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-15",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "静态索引消除私有数组访存",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "static-indexing"
+      },
+      "requires_capabilities": [],
+      "method_id": "static-indexing",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "小型线程私有数组经runtime固定遍历产生LDL/STL。",
+      "summary": "仅对一个小对象改用编译期索引展开，保持访问顺序、表达式、舍入与输出宽度。",
+      "preconditions": [
+        "源码/地址偏移已定位目标对象；遍历原本固定，真正数据依赖索引保持原语义。"
+      ],
+      "minimum_change": "仅对一个小对象改用编译期索引展开，保持访问顺序、表达式、舍入与输出宽度。",
+      "controls": [
+        "原runtime遍历、单对象静态展开；必要时比较部分展开。"
+      ],
+      "predictions": [
+        "目标local访问消失或减少，而全kernel资源和完整耗时改善。"
+      ],
+      "reject_if": [
+        "零spill被误当零local、REG增长降低驻留、代码膨胀或强行把动态索引写死。"
+      ],
+      "validation": [
+        "同源REG/STACK/local/spill和SASS、真实动态路径、尾部与完整输出/计时。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S18",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-16",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "源表达与全Kernel机器码回归分析",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "codegen-regressions"
+      },
+      "requires_capabilities": [],
+      "method_id": "codegen-regressions",
+      "lanes": [
+        "kernel"
+      ],
+      "trigger": "局部表达更短但其他路径变化，或两个单项优化组合退化。",
+      "summary": "一次只换一种同语义表达或编译原语，检查整个kernel的控制流、同步、资源和冷热角色。",
+      "preconditions": [
+        "锁定实际源码、编译器/flags、launch、输入和真实PTX/CUBIN/SASS身份，保持数学合同。"
+      ],
+      "minimum_change": "一次只换一种同语义表达或编译原语，检查整个kernel的控制流、同步、资源和冷热角色。",
+      "controls": [
+        "原表达与每个单项；发生组合疑问时做A、X、Y、X+Y同场四版。"
+      ],
+      "predictions": [
+        "目标动态工作减少且没有非局部关键路径/资源回退。"
+      ],
+      "reject_if": [
+        "以静态条数断言提速、仅查目标算术附近、组合未经重编译复验或偷换近似算法。"
+      ],
+      "validation": [
+        "同源产物/资源、相关动态指标、完整数值、未插桩样本及组合复验。"
+      ],
+      "limits": [],
+      "source_ids": [
+        "rsi:S19",
+        "rsi:S21"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    },
+    {
+      "id": "RSI-17",
+      "level": 3,
+      "parent_id": "M13",
+      "title": "跨请求模型复用与按需驻留",
+      "kind": "transfer_rule",
+      "status": "REVIEWED_OPTIMIZATION_DIRECTION_NOT_MEASURED",
+      "priority": 0,
+      "applies_to": {
+        "optimization_method": "model-lifecycle-cache"
+      },
+      "requires_capabilities": [],
+      "method_id": "model-lifecycle-cache",
+      "lanes": [
+        "scheduling"
+      ],
+      "trigger": "重复正式请求实际包含worker启动、模型构建或权重重读。",
+      "summary": "只延长一个资源生命周期，按证据选仅复用worker、GPU常驻或CPU模型池，不预设搬运方案。",
+      "preconditions": [
+        "存在目标重复成本；完整工作集容量可承受；不可变状态、请求/会话状态及版本代次可隔离。"
+      ],
+      "minimum_change": "只延长一个资源生命周期，按证据选仅复用worker、GPU常驻或CPU模型池，不预设搬运方案。",
+      "controls": [
+        "同设备同环境原版与所选分支，交错测量；多项一起改变只报告组合效果。"
+      ],
+      "predictions": [
+        "含启动/准备/迁移/清理及实际复用期后，总成本下降。"
+      ],
+      "reject_if": [
+        "vLLM已常驻且无目标重建成本、会话串用、版本失效、容量不足或迁移成本抵消。"
+      ],
+      "validation": [
+        "加载/构建/迁移实际行为、量化/布局/别名、请求隔离/取消、RAM/GPU峰值及完整请求计时。"
+      ],
+      "limits": [
+        "通常常驻的vLLM服务不应无证据增加CPU模型池；这不等于KVOffloading。",
+        "来源的RTX5090三类任务复用同一Qwen CPU模型池，是组合历史结果及小样本；不能推出跨模型收益，原始summary未在KSEO重跑。"
+      ],
+      "source_ids": [
+        "rsi:S20",
+        "rsi:S21",
+        "rsi:S22",
+        "rsi:S23"
+      ],
+      "evidence_boundary": {
+        "basis": "USER_AUTHORIZED_REVIEW_OF_PEER_METHODS",
+        "claim_scope": "仅在已核实成本、依赖与目标后端条件下用于提出候选；optimization_method是显式选择标记，不证明前提成立。",
+        "causal_status": "MECHANISM_GUIDANCE_NOT_EMPIRICAL_GAIN",
+        "revalidated_in_kseo": false,
+        "not_established": [
+          "方法审阅和用户授权不等于任何模型/GPU已测出收益；当前任务仍需独立数值与E2E验收。",
+          "遵守G-P01/G-P03及当前合同；不继承历史收益、资源算例、目标阈值、全shape预热或新量化许可。",
+          "按真实硬件/工具链重验；A800/SM80不能直接套用TMEM、tcgen05等Blackwell专用实现。"
+        ]
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "rsi:S01",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/README.md",
+      "line": 1,
+      "anchor": "可复用 GPU 算子与推理优化技能",
+      "sha256": "c7186a6b627fd7f4711196891ad100f3a714eceabb1fe7c7c1593715ff6929f6",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S02",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/catalog.json",
+      "line": 1,
+      "anchor": "catalog.json",
+      "sha256": "f76af31aebc2381e3aed5f2e85a62ac8be9fb544c13708d76a9a88ecefacddd6",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S03",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/operator-optimization/SKILL.md",
+      "line": 6,
+      "anchor": "GPU 算子与推理优化入口",
+      "sha256": "ae84e18ca3bd989b7cbb794b9e5ca6f7f0c8cc30fd42a528f9fdad3efdd71c2d",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S04",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/shorten-live-ranges/SKILL.md",
+      "line": 6,
+      "anchor": "缩短中间值存活区间",
+      "sha256": "312dee4f321324b190f0a6582ba64f30f92d953c70c4345921123c49495cd230",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S05",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/state-placement/SKILL.md",
+      "line": 6,
+      "anchor": "选择状态存放位置",
+      "sha256": "afa5a0d43bc756c4b3070e30f02759126b4fc2a65b293504bb0e0aa8f3d75d70",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S06",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/tiling-residency/SKILL.md",
+      "line": 6,
+      "anchor": "分块与驻留联合调参",
+      "sha256": "23feaa2f99b1f13f5b9b59be103fdab9d6afcf35fb21c8b89c96f2adb7d8b448",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S07",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/role-partitioning/SKILL.md",
+      "line": 6,
+      "anchor": "角色分工与工作分配",
+      "sha256": "57da450b585662f6a98ef20c69071d250fc893c25969cda53b39f51f87953a08",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S08",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/readiness-aware-scheduling/SKILL.md",
+      "line": 6,
+      "anchor": "根据完整依赖调整发射顺序",
+      "sha256": "f87b12905515bc9a411bd9e146328663955a77328ddb32fe02fafbd1f98744f9",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S09",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/segmented-publication/SKILL.md",
+      "line": 6,
+      "anchor": "分段发布与分段消费",
+      "sha256": "659af15bf0d4a038291a5e1045090d54706082f535c7b78b6d7cd041025676f2",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S10",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/prefetch-ring-buffers/SKILL.md",
+      "line": 6,
+      "anchor": "预取窗口与环形缓冲优化",
+      "sha256": "fd882ff53b3c87db1084b01bd370f1d94b10dc854cda129a9d65ca045a382548",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S11",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/index-encoding/SKILL.md",
+      "line": 6,
+      "anchor": "索引表示与解码优化",
+      "sha256": "a892ef0e5729e34c4e2bf6e30b4471043bffb0126c25339dd4785d91544ae928",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S12",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/metadata-cache/SKILL.md",
+      "line": 6,
+      "anchor": "关联元数据缓存与复用",
+      "sha256": "1083ab87a106bccbc4c947a9db31e9041e7f0a76ea0534a80f30b77fdad7351e",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S13",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/address-hoisting/SKILL.md",
+      "line": 6,
+      "anchor": "地址计算外提与简化",
+      "sha256": "9852828fa16c8b16182cd17ef55ffbfce7f23a473e02e389713940bd244e9013",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S14",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/exact-noop-elimination/SKILL.md",
+      "line": 6,
+      "anchor": "精确冗余消除",
+      "sha256": "ad20f4eddce94eddb0c79214f09ddf189aa725d7718b3727c88a816592458fea",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S15",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/invariant-precomputation/SKILL.md",
+      "line": 6,
+      "anchor": "不变计算预计算与缓存",
+      "sha256": "9fbbd018e1e9db85eeaa40f972d4d2aa9d2944e67751b3a5bcdec24081df81f4",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S16",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/paired-conversion-packing/SKILL.md",
+      "line": 6,
+      "anchor": "成组转换与直接打包",
+      "sha256": "862781337800a7cd78e26c1b25b1546c97375b971b5408dd8b980db48a7b2849",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S17",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/vector-memory-access/SKILL.md",
+      "line": 6,
+      "anchor": "向量访存与输出映射",
+      "sha256": "c180e7cf99d1efa04d0f01849dfa687ce58cf3b5952f28464ad0d0d454f41043",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S18",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/static-indexing/SKILL.md",
+      "line": 6,
+      "anchor": "静态索引消除私有数组访存",
+      "sha256": "62d9f8b4eb02c2d6108b893f12cb9ab133a4d975632f72c50b74930db29dba59",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S19",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/codegen-regressions/SKILL.md",
+      "line": 6,
+      "anchor": "源表达与机器码回归分析",
+      "sha256": "014c48c8fc2d8f81773397136e151e02f39152656e31b5b41b9eec0af73ed571",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S20",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/model-lifecycle-cache/SKILL.md",
+      "line": 6,
+      "anchor": "跨请求模型复用与按需显存驻留",
+      "sha256": "67d9e54ec4c466e3d3aaf3def73f33b08d190d9e8a735a5272a0a5b796c739b3",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S21",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/references/backend-notes.md",
+      "line": 1,
+      "anchor": "后端适配：以 CUDA / Blackwell 为具体例子",
+      "sha256": "acb63e199d2b0981be82d895bd86041b5ebe1592ddc9051f0d50d7280d49d568",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S22",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/model-lifecycle-cache/references/applicability-checks.md",
+      "line": 1,
+      "anchor": "模型生命周期方法的适用性检查",
+      "sha256": "6706838a1af2139c476ea0e7162eb5b68d2d44317a391680673dc6a4453dc7d6",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    },
+    {
+      "id": "rsi:S23",
+      "origin": "RSI 可复用 GPU 算子与推理优化方法库",
+      "relative_path": "RSI/skills/model-lifecycle-cache/references/sol-h3-rtx5090.md",
+      "line": 1,
+      "anchor": "Sol-H3 RTX 5090 生命周期优化案例",
+      "sha256": "f2254c46daa06ca6f3b2c0985454c1a135c9730a29dc9af48f4917e93247b9f7",
+      "raw_in_repository": false,
+      "review": "优化思路、触发条件、最小动作、控制与反证；没有在KSEO独立重跑GPU或证明跨模型收益。",
+      "evidence_type": "PEER_METHOD_DESCRIPTION_NOT_KSEO_MEASUREMENT",
+      "boundary": "按已审阅文件摘要引用，未分发原文；SHA256只能在取得同一原文时核验。示例、静态走查及历史结果不等于本项目实测。"
+    }
+  ]
+}

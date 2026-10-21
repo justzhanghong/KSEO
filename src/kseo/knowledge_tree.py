@@ -31,6 +31,19 @@ def load_hierarchy() -> dict:
     autonomy["nodes"][0]["policy"]["defaults"] = _read("defaults.json")
     data["nodes"] += autonomy["nodes"]
     data["sources"] += autonomy["sources"]
+    methods = _read("optimization-methods-rsi.json")
+    data["nodes"] += methods["nodes"]
+    data["sources"] += methods["sources"]
+    data["global_boundary"] += methods["global_boundary"]
+    # 目录用于发现和下钻；未知成本条件不能被当成已匹配的优化场景。
+    data["optimization_methods"] = {
+        "selection": "NAVIGATION_ONLY_REQUIRES_COST_EVIDENCE",
+        "instructions": methods["navigation_instructions"],
+        "guidance": methods["nodes"][0],
+        "sources": methods["sources"],
+        "directions": [{key: node[key] for key in ("id", "method_id", "title", "lanes", "trigger")}
+                       for node in methods["nodes"] if node["level"] == 3],
+    }
     recipe = load_recipe("deepseek-v4.1-flash")
     base = {card["id"]: card for card in _read("experience.json")["cards"]}
     v41 = {card["id"]: card for card in recipe["cards"]}

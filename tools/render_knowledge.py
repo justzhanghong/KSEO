@@ -43,18 +43,19 @@ def render() -> None:
            "| 层级 | 内容 | 数量 | 证据边界 |", "| --- | --- | --- | --- |",
            f"| L1 | 优化原则 | {counts[1]} | 跨案例概括，不构成任意模型上的收益证明 |",
            f"| L2 | 诊断与优化方法 | {counts[2]} | 决定检查和实验步骤，尚需实际工具与证据 |",
-           f"| L3 | 带条件的场景规则 | {counts[3]} | 全模型数学等价/最终精度规则、V4.1 现行规则、跨模型与评测迁移规则 |",
+           f"| L3 | 带条件的场景规则 | {counts[3]} | 全模型规则、模型现行规则、跨模型/评测迁移及优化方向 |",
            f"| L4 | 历史案例与来源 | {counts[4]} | 历史观察与本轮离线数据审计分别记录；均不代表本轮 GPU 实测 |", "",
-           f"关联 {len(data['sources'])} 条来源记录，包括历史材料、用户规范和本轮静态数据身份审计。来源记录数不等于独立复现次数。原有 9 张代表性摘要卡未保存逐卡直接来源 hash，明确保留此缺口，不补造引用。", "",
+           f"关联 {len(data['sources'])} 条来源记录，包括历史材料、用户规范、静态数据身份审计和 RSI 方法材料。来源记录数不等于独立复现次数。原有 9 张代表性摘要卡未保存逐卡直接来源 hash，明确保留此缺口，不补造引用。", "",
            "**通用前提 G-P01：速度优化必须数学等价。** 允许的差异限于浮点表示、舍入、等价运算重排或并行归约带来的微小误差，并满足搜索前冻结的容差。数学等价不要求 bitwise 一致；数值接近或质量分数通过也不能单独证明数学等价。该规则对所有模型和优化路径生效，不受 top-k 限制。", "",
            "**最终精度 G-P02：优化完成后验收 RTLBench、LongBenchv2、LiveCodeBench。** 三项全量与证据有效性均须通过。详见 [最终精度合同与踩坑](final-accuracy.md)。数据按本地冻结集合：RTLBench 160、LongBenchv2 525、LiveCodeBench 400；LongBench 保留 105 条内容各重复 5 次的原顺序和 525 分母，不换官方版本、不去重。", "",
            "## 组织与证据边界", "",
-           "本批材料抽查 GLM-5.1 NVFP4/FP8、GLM-5.2、V4-Flash 和 V4.1-Flash 的报告、故障分析及部分原始日志。整理前核对新增 23 份原文件的 SHA256；没有逐行审计全部历史日志，没有重跑 GPU，也没有新增真实单机或 P/D 部署 adapter。用户授权整理不提升原证据等级。", "",
+           "既有材料抽查 GLM-5.1 NVFP4/FP8、GLM-5.2、V4-Flash 和 V4.1-Flash 的报告、故障分析及部分原始日志，跨模型整理核对了23份原文件。另对 RSI 方法库的23份方法/索引/参考文件核对 SHA256，新增 M13 与17个优化方向，没有新增实测案例。没有逐行审计全部历史日志，没有重跑 GPU，也没有新增真实单机或 P/D 部署 adapter。用户授权整理不提升原证据等级。", "",
            "| 证据类型 | 可以支持 | 不能直接支持 |", "| --- | --- | --- | --- |",
            "| 当前用户规则 | 当前任务应遵守的合同要求 | 功能已经实现、门禁已经执行或通过 |",
            "| 历史实测/正式报告 | 原版本、负载和合同内的观察结果 | 新模型收益、组合变化中单项收益 |",
            "| 原始日志片段 | 该片段内的形状、错误或事件 | 全量请求通过、唯一事故根因 |",
            "| 代码机制审阅 | 可达路径、状态不变量和危险条件 | 未重放请求的输出级因果闭环 |",
+           "| 优化方法审阅 | 触发条件、最小动作、控制实验和反证思路 | 方法已执行、后端已支持或新模型收益 |",
            "| 本地/NFS 集成测试报告 | 该测试范围内的隔离或协议行为 | 真实 GPU 性能、长期稳定性 |",
            "| 假设/因果未闭环 | 排查方向和待补证项目 | 已证实根因、无需验证的修复 |", "",
            "特别保留：R02 组合修复不能拆分收益；R08 未独立重算整份 Nsight SQLite；R13/R14 依据历史代码审阅，未独立重放事故；R15/R20 的输出因果未闭环；R18 是可能缓解，不是根治证明；R19 是本地集成测试报告。", "",
@@ -65,6 +66,7 @@ def render() -> None:
            "`--tree`/`--node` 是完整导航，不隐含条件已满足；不能同时传 `--context`。`--hierarchy` 才筛选条件，缺少能力或硬件字段不假定匹配。示例 context 只演示筛选，不证明该部署已经支持相应能力。", "",
            "旧 `knowledge --context ...` 继续返回原有平面卡片；新分层接口覆盖本次跨模型规则。`--extra` 只用于旧接口，未审阅导入不会自动进入层级。", "",
            "外部 Agent 的 `knowledge_hierarchy` 始终带 6 条原则、全模型 G-P01/G-P02/G-P03 及所选方法、规则、匹配案例、祖先 ID 和来源。`--limit`/top-k 只截断迁移规则；匹配 V4.1 时，11 条模型现行规则完整保留，`model_recipe` 仍完整提供。当前合同和用户规则优先，旧参数、learned-experience 和历史案例不得覆盖；未知阈值仍待确认，不能自动 PASS。", "",
+           "`knowledge_hierarchy.optimization_methods` 另带 M13 实验总则与17个方向导航，不挤占现有 top-k。先核对当前成本证据，再用 `kseo knowledge --node RSI-15` 等读取成立条件、控制与反证；明确的 `context.optimization_method` 可筛选完整方向。导航和选择标记都不代表适用或验收通过。详见 [优化思路与方向](optimization-methods.md)。", "",
            "## 原则 → 方法 → 规则", ""]
     for principle in children[None]:
         doc += [f"<a id=\"{principle['id'].lower()}\"></a>", f"### {principle['id']} {principle['title']}", "", principle["summary"], ""]
@@ -91,6 +93,11 @@ def render() -> None:
                 doc += ["", "完整解释：[V4.1-Flash 专项经验](models/deepseek-v4.1-flash.md)。", ""]
         else:
             doc += ["类别：**需要当前任务验证的迁移规则**。" + rule["summary"], ""]
+            if rule.get("method_id"):
+                doc += ["触发证据：" + rule["trigger"], "",
+                        f"完整动作、控制与反证：[实验方法](optimization-methods.md#{rule['id'].lower()})。", "",
+                        *["- 专项边界：" + limit for limit in rule.get("limits", [])], "",
+                        "来源：" + evidence_links(rule) + "。", ""]
         doc += ["证据基础：" + rule["evidence_boundary"]["basis"] + "。", ""]
         doc += ["- 边界：" + limit for limit in rule["evidence_boundary"]["not_established"]]
         doc += ["", "下钻案例：" + ("、".join(link(index[i], True) for i in rule["navigation_case_ids"]) or "规则声明；无独立经验案例") + "。", ""]
@@ -100,7 +107,7 @@ def render() -> None:
     doc += [f"| `{key}` | {value} |" for key, value in data["capability_vocabulary"].items()]
     doc += ["", "案例筛选只判断索引已声明的模型/硬件/能力字段。本批新案例未完整结构化原 GPU、backend commit、拓扑与全部负载，因此同模型案例被返回只表示相关，完整迁移资格仍须通过 M01 能力与身份核对。", "",
             "## 数据与维护", "",
-            "主体是 `src/kseo/data/knowledge-hierarchy.json`，最终精度经验位于 `experience-final-accuracy.json`；现有规则/卡片通过 `legacy_links` 引用原始 recipe。层级加载检查 ID、连续层级、引用闭合与证据边界；来源使用 `cross:`/`v41:`/`accuracy:` 命名空间。", "",
+            "主体是 `src/kseo/data/knowledge-hierarchy.json`，最终精度经验位于 `experience-final-accuracy.json`，RSI 优化方向位于 `optimization-methods-rsi.json`；现有规则/卡片通过 `legacy_links` 引用原始 recipe。层级加载检查 ID、连续层级、引用闭合与证据边界；新增方法来源使用 `rsi:` 命名空间，原有来源和状态保留。", "",
             "公开来源只保留相对实验路径或文件名、行号（本批来源）、SHA256 和审阅范围。原文件未随仓库公开，无法只靠 hash 在公开环境复算历史结果。证据不足项必须补齐后另建结论，不能回写历史失败为通过。", "",
             "```bash", "# 改动数据后重建本手册、案例页和层级图", "PYTHONPATH=src python3 tools/render_knowledge.py", "```", "",
             "[完整案例与来源索引](knowledge-cases.md) · [经验转换](conversion.md) · [Agent 接口](agent-workflow.md)", ""]
@@ -132,8 +139,8 @@ def render() -> None:
     (ROOT / "docs/knowledge-cases.md").write_text("\n".join(cases), encoding="utf-8")
 
     labels = [("L1 · 优化原则", "6 条原则：数学等价与合同、最大瓶颈点、真实负载、状态一致性、服务能力、证据边界"),
-              ("L2 · 诊断与优化方法", "12 个方法：明确检查步骤、工具输入与所需证据"),
-              ("L3 · 带条件的场景规则", f"{counts[3]} 条规则：数学等价与最终精度为前提；其他规则按模型 / 能力匹配"),
+              ("L2 · 诊断与优化方法", f"{counts[2]} 个方法：明确检查步骤、工具输入、控制实验与所需证据"),
+              ("L3 · 带条件的场景规则", f"{counts[3]} 条规则：数学等价与最终精度为前提；其他规则按模型 / 能力 / 方法匹配"),
               ("L4 · 历史案例与来源", f"{counts[4]} 个案例 · {len(data['sources'])} 条来源记录：保留观察、原状态、SHA256 与未闭环项")]
     svg = ['<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="670" viewBox="0 0 1080 670" role="img" aria-labelledby="title desc">',
            '<title id="title">KSEO 由粗到细的分层知识</title>',

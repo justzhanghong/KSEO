@@ -28,7 +28,7 @@ class KnowledgeTreeTests(unittest.TestCase):
         self.assertTrue({f"R{i:02d}" for i in range(1, 21)} <= ids)
         self.assertTrue({f"case:R{i:02d}" for i in range(1, 21)} <= ids)
         self.assertTrue({card["id"] for card in load_cards()} <= ids)
-        self.assertEqual(overview(self.data)["counts"], {"1": 6, "2": 12, "3": 51, "4": 59})
+        self.assertEqual(overview(self.data)["counts"], {"1": 6, "2": 13, "3": 68, "4": 59})
 
     def test_every_case_has_continuous_ancestry_and_explicit_boundary(self):
         for node in self.data["nodes"]:
@@ -107,7 +107,7 @@ class KnowledgeTreeTests(unittest.TestCase):
 
     def test_sources_are_namespaced_hash_addressed_and_not_private_absolute_paths(self):
         source_ids = {s["id"] for s in self.data["sources"]}
-        self.assertEqual(len(source_ids), 74)
+        self.assertEqual(len(source_ids), 97)
         for source in self.data["sources"]:
             self.assertRegex(source["sha256"], r"^[a-f0-9]{64}$")
             if "relative_path" in source:
@@ -197,6 +197,10 @@ class KnowledgeTreeTests(unittest.TestCase):
                 "assert nodes['K04']['evidence_boundary']['revalidated_in_kseo'] is False\n"
                 "assert nodes['G-P01']['policy']['mathematical_equivalence_required'] is True\n"
                 "assert any(s['id']=='cross:S15' for s in r['knowledge_hierarchy']['sources'])\n"
+                "methods=r['knowledge_hierarchy']['optimization_methods']\n"
+                "assert methods['selection']=='NAVIGATION_ONLY_REQUIRES_COST_EVIDENCE'\n"
+                "assert len(methods['directions'])==17 and methods['guidance']['id']=='M13'\n"
+                "assert methods['guidance']['evidence_boundary']['revalidated_in_kseo'] is False\n"
                 "Path(os.environ['KSEO_AGENT_PROPOSAL']).write_text('{\"stop\":true}')\n"
             )
             config = task(agent=True)
@@ -207,6 +211,40 @@ class KnowledgeTreeTests(unittest.TestCase):
             request = read_json(root / "proposal/request.json")
             self.assertNotIn("model_recipe", request)
             self.assertIn("导航关系不等于因果证明", request["instructions"])
+
+    def test_method_navigation_does_not_assume_unknown_cost_conditions(self):
+        result = retrieve_hierarchy({}, 1, self.data)
+        methods = result['optimization_methods']
+        self.assertEqual(methods['selection'], 'NAVIGATION_ONLY_REQUIRES_COST_EVIDENCE')
+        self.assertEqual(len(methods['directions']), 17)
+        self.assertFalse(any(n['id'].startswith('RSI-') for n in result['nodes']))
+        self.assertIn('G-P01', result['current_rule_ids'])
+        sources = {s['id'] for s in methods['sources']}
+        self.assertTrue(set(methods['guidance']['source_ids']) <= sources)
+        self.assertEqual(len(sources), 23)
+        self.assertTrue(all(s['raw_in_repository'] is False for s in methods['sources']))
+
+    def test_explicit_direction_returns_experiment_and_ancestry_for_a_new_model(self):
+        result = retrieve_hierarchy({'model_family': 'new_model', 'gpu_arch': 'sm80',
+                                     'optimization_method': 'static-indexing'}, 1, self.data)
+        selected = next(n for n in result['nodes'] if n['id'] == 'RSI-15')
+        self.assertEqual(selected['ancestor_ids'], ['K02', 'M13'])
+        for key in ('preconditions', 'controls', 'predictions', 'reject_if', 'validation'):
+            self.assertTrue(selected[key])
+        self.assertFalse(selected['evidence_boundary']['revalidated_in_kseo'])
+        self.assertNotIn('PASS', selected['status'])
+        self.assertIn('optimization_method', selected['applies_to'])
+        self.assertEqual(selected['navigation_case_ids'], [])
+        self.assertFalse(any(n['id'].startswith('RSI-') for n in
+                             retrieve_hierarchy({'optimization_method': 'unknown'}, 100, self.data)['nodes']))
+
+    def test_lifecycle_direction_keeps_residency_and_hardware_limits(self):
+        value = inspect_node('RSI-17', self.data)
+        self.assertEqual(value['node']['lanes'], ['scheduling'])
+        self.assertIn('vLLM已常驻', ' '.join(value['node']['reject_if']))
+        self.assertIn('KVOffloading', ' '.join(value['node']['limits']))
+        self.assertIn('SM80', ' '.join(value['node']['evidence_boundary']['not_established']))
+        self.assertTrue(all(s['id'].startswith('rsi:') for s in value['sources']))
 
 
 if __name__ == "__main__":

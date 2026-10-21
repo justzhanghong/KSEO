@@ -1,0 +1,6 @@
+{
+  "model_family": "new_model",
+  "gpu_arch": "sm80",
+  "capabilities": [],
+  "optimization_method": "static-indexing"
+}
