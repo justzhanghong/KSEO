@@ -27,6 +27,7 @@ KSEO 参考 GEAK 的 System 与 Kernel 分层设计，组织端到端推理优�
   - 基础镜像：192.168.14.129:80/ae/vllm_openai_ssh:v0.26.0
 - 相关约束：
   - 最大上下文固定为：256K，1k=1024。
+  - 不限制总时间预算，精度测试不限时。
 - 目标：
   - 单轮对话场景目标：72K输入256输出，1/2/3并发，TTFT/TPOT < 10s/30ms，thinking固定为high，GSM8K≥95%、RTLBench≥40%、LongBench≥59%、LiveCodeBench≥86%。
   - 单轮对话场景阶段目标：72K输入256输出，1/2/3并发，TTFT/TPOT，30s/50ms、20s/50ms、15s/40ms、12s/40ms、10s/40ms、10s/30ms。
